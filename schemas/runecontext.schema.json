@@ -1,0 +1,174 @@
+{
+  "$schema": "http://json-schema.org/draft-7/schema#",
+  "title": "RuneContext Root Configuration",
+  "description": "Project-root configuration for RuneContext version, assurance tier, and source selection. Schema version 1.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "runecontext_version",
+    "assurance_tier",
+    "source"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version. Unknown versions must fail closed."
+    },
+    "runecontext_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+(\\.\\d+)?(-[a-zA-Z0-9.]+)?$",
+      "description": "RuneContext version for RuneCode compatibility checks. Format: major.minor[.patch][-prerelease]"
+    },
+    "assurance_tier": {
+      "type": "string",
+      "enum": [
+        "plain",
+        "verified"
+      ],
+      "description": "Assurance tier: 'plain' for lightweight standalone use, 'verified' for generated assurance artifacts and stronger tracing."
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "Source configuration for embedded or linked RuneContext.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "embedded",
+            "git",
+            "path"
+          ],
+          "description": "Source type: 'embedded' (local), 'git' (linked repository), or 'path' (developer-local)."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "embedded"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Path to embedded RuneContext directory (typically 'runecontext')."
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "git"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "url": {
+                "type": "string",
+                "description": "Git repository URL."
+              },
+              "commit": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$",
+                "description": "Pinned commit SHA (40 hex chars). Immutable, preferred for audit."
+              },
+              "signed_tag": {
+                "type": "string",
+                "description": "Signed tag name. Must include 'expect_commit' for verification."
+              },
+              "expect_commit": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$",
+                "description": "Expected commit SHA when resolving a signed tag. Validation fails closed if mismatch."
+              },
+              "ref": {
+                "type": "string",
+                "description": "Mutable branch/ref name. Requires 'allow_mutable_ref: true' and emits warnings."
+              },
+              "allow_mutable_ref": {
+                "type": "boolean",
+                "default": false,
+                "description": "Explicitly opt-in to mutable refs. Mutable refs are not reproducible."
+              },
+              "subdir": {
+                "type": "string",
+                "default": "runecontext",
+                "description": "Subdirectory within the repository containing the RuneContext tree."
+              }
+            },
+            "required": [
+              "url"
+            ],
+            "oneOf": [
+              {
+                "required": [
+                  "commit"
+                ]
+              },
+              {
+                "required": [
+                  "signed_tag",
+                  "expect_commit"
+                ]
+              },
+              {
+                "required": [
+                  "ref",
+                  "allow_mutable_ref"
+                ],
+                "properties": {
+                  "allow_mutable_ref": {
+                    "const": true
+                  }
+                }
+              }
+            ],
+            "additionalProperties": false
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "path"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Local path to RuneContext directory. Developer-local only, non-auditable."
+              }
+            },
+            "required": [
+              "path"
+            ],
+            "additionalProperties": false
+          }
+        }
+      ]
+    },
+    "allow_extensions": {
+      "type": "boolean",
+      "default": false,
+      "description": "Explicitly opt-in to allow 'extensions' object in hand-authored machine-readable files. When true and extensions present, validation warns."
+    }
+  }
+}

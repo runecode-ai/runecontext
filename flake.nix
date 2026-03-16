@@ -1,5 +1,5 @@
 {
-  description = "RuneContext dev environment and canonical release builder (Nix >= 2.18)";
+  description = "RuneContext dev environment and canonical release builder";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";

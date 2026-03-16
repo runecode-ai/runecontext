@@ -20,3 +20,16 @@ Common commands:
 - `just test`
 - `just check`
 - `just release`
+
+## Contributing
+
+See `CONTRIBUTING.md`. DCO sign-off is required (`git commit -s`).
+
+## Security
+
+Please do not open public issues for security vulnerabilities. See
+`SECURITY.md`.
+
+## License
+
+Apache-2.0. See `LICENSE` and `NOTICE`.

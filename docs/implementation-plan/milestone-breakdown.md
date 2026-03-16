@@ -487,7 +487,7 @@ tools while preserving one core model.
 ### Epic 1: Canonical operations reference
 
 - [ ] Issue: author the canonical in-project operations reference under
-  `operations/`.
+  `runecontext/operations/`.
 - [ ] Issue: define adapter-to-core operation mapping rules.
 - [ ] Issue: define how adapters consume or derive from the canonical
   operations reference without redefining semantics.

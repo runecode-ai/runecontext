@@ -106,6 +106,8 @@ SHA256 hash: a1b2c3d4... (64 hex chars)
 
 - Context packs must exclude the `pack_hash` field itself before canonicalizing the remaining object for hashing.
 - The canonical hash input is the full context-pack object containing exactly these top-level fields when present: `schema_version`, `canonicalization`, `pack_hash_alg`, `id`, `resolved_from`, `selected`, `excluded`, and `generated_at`.
+- `selected` must always serialize with all four aspect keys: `project`, `standards`, `specs`, and `decisions`, using empty arrays when an aspect selects no files.
+- `excluded`, when present, must also serialize with the same four aspect keys and use empty arrays for aspects with no excluded files.
 - `resolved_from`, `selected`, and `excluded` contribute their full nested content exactly as stored in the pack.
 - Run RFC 8785 JCS over that truncated object, then compute SHA256 over the UTF-8 bytes; the resulting 64-character hex string becomes the value stored in `pack_hash`.
 
@@ -125,8 +127,8 @@ Hand-authored files (`runecontext.yaml`, `bundles/*.yaml`, `changes/*/status.yam
 2. **Validation scope**: Root-level `runecontext.yaml` can enforce this directly in its own schema. Bundle/status files require project-level validation because the opt-in flag lives in a different file.
 3. **When extensions present**: Validation passes with a warning once the project-level opt-in check succeeds.
 4. **Namespaced keys**: Extension keys must follow ownership-style namespacing:
-   - Format: `[a-z0-9]([a-z0-9._-]*[a-z0-9])?\.[a-z0-9]([a-z0-9._-]*[a-z0-9])?` (e.g., `dev.acme.foo`, `io.runecode.custom_metadata`).
-   - Each segment may include underscores or dashes so real-world identifiers stay valid while still keeping a clear namespace dot separator.
+   - Format: `[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)+` (e.g., `dev.acme.foo`, `io.runecode.custom_metadata`).
+   - Each segment may include underscores or dashes, but dots are reserved strictly as namespace separators so empty segments like `dev..meta` fail validation.
    - Prevents collisions, surfaces typos early, and keeps extension keys auditable.
 5. **Non-authoritative**: Extension values are data, not semantics. They cannot affect:
    - Schema validation outcomes

@@ -172,6 +172,12 @@
     "selected": {
       "type": "object",
       "additionalProperties": false,
+      "required": [
+        "project",
+        "standards",
+        "specs",
+        "decisions"
+      ],
       "description": "Selected files by aspect family.",
       "properties": {
         "project": {
@@ -191,7 +197,13 @@
     "excluded": {
       "type": "object",
       "additionalProperties": false,
-      "description": "Excluded files by aspect family (optional; present if any files were explicitly excluded).",
+      "required": [
+        "project",
+        "standards",
+        "specs",
+        "decisions"
+      ],
+      "description": "Excluded files by aspect family. When present, all four aspect keys must appear, using empty arrays where nothing was excluded.",
       "properties": {
         "project": {
           "type": "array",

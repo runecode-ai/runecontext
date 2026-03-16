@@ -26,5 +26,11 @@ selected:
         - bundle: base
           aspect: standards
           rule: include
-excluded: {}
+  specs: []
+  decisions: []
+excluded:
+  project: []
+  standards: []
+  specs: []
+  decisions: []
 generated_at: "2026-03-16T10:30:00Z"

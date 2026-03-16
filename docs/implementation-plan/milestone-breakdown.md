@@ -96,6 +96,8 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
 - The schema dialect is frozen at JSON Schema Draft 2020-12 for all v1 contracts.
 - Unknown-field behavior is explicit: closed schemas by default; optional `extensions`
   object with namespaced keys; no extensions in generated artifacts.
+- Context-pack serialization shape is explicit enough to hash deterministically across implementations, including stable handling of empty aspect inventories.
+- Alpha-stage contract refinements must update generators, fixtures, and docs together before downstream consumers depend on the hash or schema shape.
 - Schema version 1 files must fail closed on unknown `schema_version` and unknown enum
   values.
 - Markdown contracts for `proposal.md` and `standards.md` are frozen with section ordering

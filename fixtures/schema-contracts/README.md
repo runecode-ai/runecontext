@@ -23,7 +23,7 @@ The current fixture set contains 15 YAML fixtures:
 - `reject-unknown-field-runecontext.yaml`: unknown top-level field on `runecontext.yaml`.
 - `reject-unknown-schema-version.yaml`: `schema_version: 2` must fail closed.
 - `reject-bad-extension-key.yaml`: invalid extension key (`BadKey`) should fail namespacing rules.
-- `reject-context-pack-unknown-field.yaml`: generated context pack with forbidden unknown field `metadata`.
+- `reject-context-pack-unknown-field.yaml`: generated context pack with canonical four-aspect shape but forbidden unknown field `metadata`.
 
 ### Reject profile / project-level fixtures
 
@@ -36,7 +36,7 @@ The current fixture set contains 15 YAML fixtures:
 
 - All `valid-*.yaml` fixtures except `valid-bundle-with-extensions.yaml` validate directly against a single schema with no extra project context.
 - `valid-bundle-with-extensions.yaml` validates structurally against `schemas/bundle.schema.json`; a full implementation must also confirm the root config enables extensions.
-- All `reject-*.yaml` fixtures except `reject-extensions-without-optin.yaml` and `reject-yaml-anchors-aliases.yaml` should fail direct schema validation.
+- All `reject-*.yaml` fixtures except `reject-extensions-without-optin.yaml` and `reject-yaml-anchors-aliases.yaml` should fail direct schema validation for the reason described in their filename and notes.
 
 ### Project-level validation
 
@@ -49,8 +49,9 @@ The current fixture set contains 15 YAML fixtures:
 
 ## Coverage Notes
 
-- Extension keys follow the enforced ownership pattern `owner.name`, allowing lowercase alphanumerics plus `._-` within each segment.
+- Extension keys follow the enforced ownership pattern `owner.name.more`, allowing lowercase alphanumerics plus `_` and `-` within each non-empty segment while reserving `.` strictly as the namespace separator.
 - Context-pack fixtures reflect the current provenance rules: only `git` sources may include `source_commit`; `embedded` and `path` sources must use their matching verification posture.
+- Context-pack fixtures use the canonical artifact shape: `selected` always contains all four aspect keys, and `excluded` uses the same four-key layout whenever present.
 - Context-pack hashes shown here are shape-valid placeholders for schema tests. Hash correctness against canonical JCS input should be covered by dedicated hashing tests in implementation code.
 
 ## Usage

@@ -12,6 +12,12 @@ resolved_from:
 selected:
   project: []
   standards: []
-excluded: {}
+  specs: []
+  decisions: []
+excluded:
+  project: []
+  standards: []
+  specs: []
+  decisions: []
 generated_at: "2026-03-16T10:30:00Z"
 metadata: "should be rejected in context pack"

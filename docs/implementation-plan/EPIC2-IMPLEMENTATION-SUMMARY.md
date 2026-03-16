@@ -31,7 +31,7 @@ Rather than allowing arbitrary unknown fields (which creates security/audit risk
 - **Dialect**: JSON Schema Draft 2020-12 with `unevaluatedProperties: false` on `source` so variant-specific fields remain closed without Draft-7 conditional pitfalls.
 - **Closed**: Yes. Unknown fields rejected.
 - **Extensions**: Yes, optional (when `allow_extensions: true`).
-- **Extensions Keys**: Extension keys require an explicit namespace (`owner.name`) with lowercase alphanumerics plus `._-` inside each segment.
+- **Extensions Keys**: Extension keys require explicit dot-separated ownership segments (`owner.name.more`) with lowercase alphanumerics plus `_` and `-` inside each non-empty segment.
 
 #### bundle.schema.json
 - **Scope**: Context bundle selectors at `bundles/*.yaml`.
@@ -58,6 +58,8 @@ Rather than allowing arbitrary unknown fields (which creates security/audit risk
 - **Source Consistency**: `embedded` sources must use `source_verification: embedded`; `path` sources must use `source_verification: unverified_local_source`; only `git` sources may carry `source_commit`.
 - **Hashing**: `pack_hash` is SHA256 over the RFC 8785 JCS serialization of the complete pack minus the `pack_hash` field itself, ensuring no circular inputs.
 - **File Inventory**: Path, SHA256 hash, selected_by (ordered rules showing last-matching-rule-wins).
+- **Canonical Shape**: `selected` always contains `project`, `standards`, `specs`, and `decisions`; `excluded` uses the same four-key layout whenever present so equivalent packs hash identically.
+- **Alpha Refinement**: This canonical shape rule is treated as an alpha.1 contract refinement before a stable v1 release, so generators and fixtures must align before downstream consumers rely on pack hashes.
 - **Closed**: Yes, fully. **No extensions permitted in v1 generated artifacts.**
 
 ### 2. Contracts and Profiles (schemas/)
@@ -65,7 +67,7 @@ Rather than allowing arbitrary unknown fields (which creates security/audit risk
 #### MACHINE-READABLE-PROFILE.md
 Defines the restricted YAML subset for all machine-readable files:
 - **No YAML Anchors/Aliases**: Each value written out in full.
-- **No Duplicate Keys**: Schema validation rejects duplicates.
+- **No Duplicate Keys**: YAML/profile validation must reject duplicates during parsing or decode configuration before schema validation runs.
 - **No Implicit Type Coercion**: yes/no not coerced to booleans; use true/false explicitly.
 - **No Custom Tags**: YAML tags forbidden.
 - **UTF-8 Only**: No other encodings permitted.
@@ -82,7 +84,7 @@ Defines the restricted YAML subset for all machine-readable files:
 **Unknown-Field Behavior**:
 - **Closed Schema Default**: Unknown top-level fields rejected.
 - **Extensions Opt-In**: Optional `extensions` object allowed when `runecontext.yaml` sets `allow_extensions: true`; bundle/status enforcement is project-scoped because the opt-in flag lives in the root file.
-- **Namespaced Keys**: Extension keys must follow the `owner.name` pattern—`[a-z0-9]([a-z0-9._-]*[a-z0-9])?\.[a-z0-9]([a-z0-9._-]*[a-z0-9])?`—so each segment may include underscores or dashes while keeping an explicit namespace separator.
+- **Namespaced Keys**: Extension keys must follow the `owner.name.more` pattern—`[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)+`—so dots only separate non-empty namespace segments.
 - **Non-Authoritative**: Extension values are data, not semantics; cannot affect validation, bundle resolution, lifecycle, or policy.
 - **Not in Generated Artifacts**: Context packs and assurance artifacts contain no extensions in v1.
 
@@ -125,7 +127,7 @@ The shipped fixture set currently contains **15 YAML fixtures** plus a README th
 - `valid-change-status.yaml`: Complete change status with all fields.
 - `valid-custom-type.yaml`: Change with custom type `x-migration`.
 - `valid-superseded-change.yaml`: Superseded change with required `superseded_by`.
-- `valid-context-pack.yaml`: Generated context pack with consistent git provenance and valid 64-character hashes.
+- `valid-context-pack.yaml`: Generated context pack with consistent git provenance, canonical four-aspect shape, and valid 64-character hashes.
 
 #### Reject Cases
 - `reject-unknown-field-runecontext.yaml`: Unknown top-level field fails validation.
@@ -140,7 +142,7 @@ The shipped fixture set currently contains **15 YAML fixtures** plus a README th
 #### docs/implementation-plan/milestone-breakdown.md
 - Marked 14 Epic 2 issues as completed (checked).
 - Consolidated Epic 4 into Epic 2 (canonical data rules integrated with schema contracts).
-- Updated exit criteria to reflect closed schemas, extensions opt-in, YAML profile, JCS hashing, and owner-style extension names.
+- Updated exit criteria to reflect closed schemas, extensions opt-in, YAML profile, JCS hashing, strict owner-style extension names, and canonical context-pack shape.
 - Simplified markdown contract epics to reflect completed sections.
 
 ---
@@ -176,6 +178,7 @@ The shipped fixture set currently contains **15 YAML fixtures** plus a README th
 - Context packs carry top-level `pack_hash` (SHA256 over RFC 8785 JCS of the full pack minus `pack_hash`).
 - RuneCode can bind and sign this hash in audit/provenance flows.
 - Deterministic hashing ensures local/remote parity.
+- Because canonical empty-aspect encoding is now explicit, any generator that previously omitted empty aspect keys must be updated before comparing or persisting alpha.1 pack hashes.
 
 ### Proposal.md Intent Binding
 - RuneCode can parse `proposal.md` by its strict section ordering.
@@ -199,6 +202,7 @@ The shipped fixture set currently contains **15 YAML fixtures** plus a README th
 - Implementations may preserve unknown fields from v1 when round-tripping, but must fail on unknown schema_version.
 - Extension opt-in policy remains stable and forward-compatible.
 - Draft 2020-12 remains the target schema dialect unless future validator support forces a migration plan.
+- Alpha contract refinements that land before a stable v1 release must still update fixtures, generators, and documentation in the same change so downstream implementations stay in sync.
 
 ### Generated Artifact Stability
 - Context pack schema is fully closed in v1; no extensions.
@@ -224,6 +228,7 @@ The shipped fixture set currently contains **15 YAML fixtures** plus a README th
 1. **End-to-End**: Create a minimal project with embedded RuneContext; validate all files against schemas.
 2. **Extension Scenario**: Enable `allow_extensions: true`; validate that extensions are accepted and warnings issued.
 3. **Source Verification**: Validate source_verification enum in context packs (pinned, signed-tag, mutable, local, embedded).
+4. **CI Split**: Nix jobs run `just nix-ci` inside the dev shell, while Windows portability jobs run the portable `just ci` target with no Nix dependency.
 
 ---
 
@@ -277,7 +282,7 @@ The following are explicitly deferred to later alphas:
 
 ### Extension Namespacing
 **Q**: Why ownership-style namespacing (e.g., `io.runecode.custom`) rather than simple `x-` prefix?  
-**A**: Ownership namespaces prevent collisions, make typos obvious (misplaced dots fail validation), and audit trails show origin (io.runecode = RuneCode integration, dev.acme = company internal). The rule `[a-z0-9]([a-z0-9._-]*[a-z0-9])?\.[a-z0-9]([a-z0-9._-]*[a-z0-9])?` enforces this while still allowing underscores and dashes inside each segment.
+**A**: Ownership namespaces prevent collisions, make typos obvious (misplaced dots fail validation), and audit trails show origin (io.runecode = RuneCode integration, dev.acme = company internal). The rule `[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)+` enforces this while still allowing underscores and dashes inside each non-empty segment.
 
 ### Why No Extensions in Generated Artifacts?
 **Q**: Why are context packs fully closed; no extensions allowed?  

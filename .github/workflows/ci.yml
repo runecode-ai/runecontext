@@ -4,8 +4,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches:
-      - main
 
 permissions:
   contents: read
@@ -17,7 +15,7 @@ concurrency:
 jobs:
   nix:
     name: Nix (${{ matrix.runner }} - ${{ matrix.system }})
-    if: ${{ github.event_name != 'pull_request' || matrix.push_only != true }}
+    if: ${{ matrix.push_only != true || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:

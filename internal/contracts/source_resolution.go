@@ -431,7 +431,7 @@ func resolveEmbeddedSourceRoot(configPath, projectRoot string, sourceMap map[str
 		return "", "", &ValidationError{Path: configPath, Message: fmt.Sprintf("embedded source path %v", err)}
 	}
 	absRoot := filepath.Clean(filepath.Join(projectRoot, filepath.FromSlash(declared)))
-	resolvedProjectRoot, resolvedRoot, err := canonicalizeContainedPath(projectRoot, absRoot)
+	resolvedProjectRoot, resolvedRoot, err := canonicalizePaths(projectRoot, absRoot)
 	if err != nil {
 		return "", "", &ValidationError{Path: configPath, Message: err.Error()}
 	}
@@ -619,7 +619,7 @@ func copyResolvedTree(sourcePath, destPath, root string, active map[string]struc
 	if !info.Mode().IsRegular() {
 		return fmt.Errorf("unsupported non-regular file %q in local source tree", resolved)
 	}
-	if err := validateResolvedOpenPath(sourcePath, root); err != nil {
+	if err := validateOpenPathWithinRoot(resolved, root); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
@@ -825,7 +825,7 @@ func runeContextRelativePath(root, path string) string {
 	return filepath.ToSlash(rel)
 }
 
-func canonicalizeContainedPath(root, target string) (string, string, error) {
+func canonicalizePaths(root, target string) (string, string, error) {
 	resolvedRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		return "", "", fmt.Errorf("resolve root %q: %w", root, err)
@@ -837,8 +837,8 @@ func canonicalizeContainedPath(root, target string) (string, string, error) {
 	return resolvedRoot, resolvedTarget, nil
 }
 
-func validateResolvedOpenPath(path, root string) error {
-	resolvedRoot, resolvedPath, err := canonicalizeContainedPath(root, path)
+func validateOpenPathWithinRoot(resolvedPath, root string) error {
+	resolvedRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		return err
 	}

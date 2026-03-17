@@ -145,6 +145,38 @@ The shipped fixture set currently contains **15 YAML fixtures** plus a README th
 - Updated exit criteria to reflect closed schemas, extensions opt-in, YAML profile, JCS hashing, strict owner-style extension names, and canonical context-pack shape.
 - Simplified markdown contract epics to reflect completed sections.
 
+### 5. Post-Review Hardening Follow-Up
+
+The alpha.2 bundle and source-resolution implementation now includes the
+additional hardening agreed during code review triage:
+
+- **Embedded root canonicalization**: embedded RuneContext roots are checked
+  after symlink resolution against the selected project root so symlinked
+  escapes fail closed.
+- **Git transport hardening**: git URLs now reject remote-helper forms,
+  subprocesses run with an explicit protocol allowlist, and surfaced git errors
+  redact URLs or embedded credentials.
+- **Whole-project symlink containment**: project walks and file reads for
+  bundle/spec/decision/change validation now apply resolved-path containment so
+  symlinked files cannot escape the selected subtree.
+- **Bundle traversal bounds**: bundle glob enumeration now enforces practical
+  depth and file-count caps in addition to the existing inheritance-depth guard.
+- **Immutable bundle results**: cached bundle resolutions are returned as
+  defensive copies so later callers cannot mutate hidden cached state.
+- **Concurrent schema safety**: schema compilation cache access is synchronized
+  for concurrent validator use.
+
+### 6. Additional Tests
+
+Follow-up tests were added for:
+
+- rejection of git remote-helper URL forms
+- redaction behavior for surfaced git transport errors
+- explicit git subprocess environment guards
+- embedded-root symlink escape rejection
+- whole-project spec symlink escape rejection
+- defensive-copy behavior for cached bundle resolutions
+
 ---
 
 ## Security and Audit Implications

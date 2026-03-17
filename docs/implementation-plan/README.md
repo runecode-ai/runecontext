@@ -106,6 +106,8 @@ until the end.
   claim are enforced; do not leave parser-only checks unwired.
 - Validate against the project's declared content root instead of assuming a
   fixed embedded directory name when alpha-stage source settings allow variation.
+- Keep release metadata, module metadata, and executable validation behavior in
+  sync with the documented alpha train so foundational tooling does not drift.
 - Add CLI integration tests for write flows, non-interactive behavior, dry-run
   behavior, explain output, and failure classes.
 - Before full `--json` lands, narrow early CLI commands may use stable

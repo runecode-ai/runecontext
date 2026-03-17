@@ -48,7 +48,12 @@ type ProjectIndex struct {
 	ChangeIDs      map[string]struct{}
 	SpecPaths      map[string]struct{}
 	DecisionPaths  map[string]struct{}
-	StatusFileData map[string]map[string]any
+	StatusFiles    map[string]StatusFileRecord
+}
+
+type StatusFileRecord struct {
+	Data map[string]any
+	Raw  []byte
 }
 
 type markdownSection struct {
@@ -176,23 +181,19 @@ func (v *Validator) ValidateProject(root string) (*ProjectIndex, error) {
 	if err := v.validateBundles(rootConfigPath, rootData, filepath.Join(contentRoot, "bundles")); err != nil {
 		return nil, err
 	}
-	for path, doc := range index.StatusFileData {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		if err := v.ValidateExtensionOptIn(rootConfigPath, rootData, path, data); err != nil {
+	for path, record := range index.StatusFiles {
+		if err := v.ValidateExtensionOptIn(rootConfigPath, rootData, path, record.Raw); err != nil {
 			return nil, err
 		}
 		for _, key := range []string{"depends_on", "informed_by", "related_changes"} {
-			if err := validateChangeIDRefs(path, key, doc[key], index.ChangeIDs); err != nil {
+			if err := validateChangeIDRefs(path, key, record.Data[key], index.ChangeIDs); err != nil {
 				return nil, err
 			}
 		}
-		if err := validatePathRefs(path, "related_specs", doc["related_specs"], index.SpecPaths); err != nil {
+		if err := validatePathRefs(path, "related_specs", record.Data["related_specs"], index.SpecPaths); err != nil {
 			return nil, err
 		}
-		if err := validatePathRefs(path, "related_decisions", doc["related_decisions"], index.DecisionPaths); err != nil {
+		if err := validatePathRefs(path, "related_decisions", record.Data["related_decisions"], index.DecisionPaths); err != nil {
 			return nil, err
 		}
 	}
@@ -394,14 +395,11 @@ func parseFrontmatterMarkdown(path string, data []byte) (*FrontmatterDocument, e
 		return nil, &ValidationError{Path: path, Message: "missing YAML frontmatter opening delimiter"}
 	}
 	remaining := strings.TrimPrefix(text, "---\n")
-	parts := strings.SplitN(remaining, "\n---\n", 2)
-	if len(parts) != 2 {
-		parts = strings.SplitN(remaining, "\n---", 2)
-	}
-	if len(parts) != 2 {
+	frontmatterText, body, ok := splitFrontmatter(remaining)
+	if !ok {
 		return nil, &ValidationError{Path: path, Message: "missing YAML frontmatter closing delimiter"}
 	}
-	frontmatterBytes := []byte(parts[0] + "\n")
+	frontmatterBytes := []byte(frontmatterText + "\n")
 	if err := rejectRestrictedYAMLFeatures(frontmatterBytes); err != nil {
 		return nil, &ValidationError{Path: path, Message: err.Error()}
 	}
@@ -413,7 +411,20 @@ func parseFrontmatterMarkdown(path string, data []byte) (*FrontmatterDocument, e
 	if !ok {
 		return nil, &ValidationError{Path: path, Message: "frontmatter must decode to a mapping"}
 	}
-	return &FrontmatterDocument{Frontmatter: frontmatterMap, Body: parts[1]}, nil
+	return &FrontmatterDocument{Frontmatter: frontmatterMap, Body: body}, nil
+}
+
+func splitFrontmatter(remaining string) (string, string, bool) {
+	lines := strings.Split(remaining, "\n")
+	for i, line := range lines {
+		if line != "---" {
+			continue
+		}
+		frontmatter := strings.Join(lines[:i], "\n")
+		body := strings.Join(lines[i+1:], "\n")
+		return frontmatter, body, true
+	}
+	return "", "", false
 }
 
 func parseYAML(data []byte) (any, error) {
@@ -580,10 +591,10 @@ func findNearestArtifactRoot(path, root string) (string, error) {
 
 func buildProjectIndex(v *Validator, contentRoot string) (*ProjectIndex, error) {
 	index := &ProjectIndex{
-		ChangeIDs:      map[string]struct{}{},
-		SpecPaths:      map[string]struct{}{},
-		DecisionPaths:  map[string]struct{}{},
-		StatusFileData: map[string]map[string]any{},
+		ChangeIDs:     map[string]struct{}{},
+		SpecPaths:     map[string]struct{}{},
+		DecisionPaths: map[string]struct{}{},
+		StatusFiles:   map[string]StatusFileRecord{},
 	}
 	if err := walkChangeDirectories(filepath.Join(contentRoot, "changes"), func(changeDir string) error {
 		statusPath := filepath.Join(changeDir, "status.yaml")
@@ -606,7 +617,7 @@ func buildProjectIndex(v *Validator, contentRoot string) (*ProjectIndex, error) 
 			return err
 		}
 		index.ChangeIDs[fmt.Sprint(obj["id"])] = struct{}{}
-		index.StatusFileData[statusPath] = obj
+		index.StatusFiles[statusPath] = StatusFileRecord{Data: obj, Raw: append([]byte(nil), statusData...)}
 		proposalPath := filepath.Join(changeDir, "proposal.md")
 		proposalData, err := os.ReadFile(proposalPath)
 		if err != nil {

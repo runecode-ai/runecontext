@@ -87,6 +87,8 @@
   than panics when schemas, YAML, markdown contracts, or project references are invalid.
 - [ ] Early validation entrypoints honor declared project content roots and the
   full restricted-YAML profile rather than relying on default-path assumptions.
+- [ ] Alpha-stage release metadata, module metadata, and parser behavior stay
+  consistent with the documented release series and fail-closed contracts.
 - [ ] The adapter-management command exists: `runectx adapter sync <tool>`.
 - [ ] Machine-facing flags exist and behave consistently: `--json`,
   `--non-interactive`, `--dry-run`, and `--explain`.

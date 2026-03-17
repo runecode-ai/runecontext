@@ -175,6 +175,14 @@ func TestParseSpecAllowsClosingFrontmatterDelimiterAtEOF(t *testing.T) {
 	}
 }
 
+func TestParseSpecRejectsNonDelimiterFrontmatterLine(t *testing.T) {
+	v := NewValidator(schemaRoot(t))
+	data := []byte("---\nschema_version: 1\nid: auth-gateway\ntitle: Auth Gateway\noriginating_changes:\n  - CHG-2026-001-a3f2-auth-gateway\nrevised_by_changes: []\n---oops\n# Auth Gateway")
+	if _, err := v.ParseSpec("fixtures/specs/auth-gateway.md", data); err == nil {
+		t.Fatal("expected malformed closing delimiter to fail")
+	}
+}
+
 func TestResolveContentRoot(t *testing.T) {
 	projectRoot := fixturePath(t, "traceability", "valid-project-custom-root")
 	rootData := readFixture(t, filepath.Join(projectRoot, "runecontext.yaml"))

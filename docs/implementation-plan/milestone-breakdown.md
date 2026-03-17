@@ -98,6 +98,10 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
 - [x] Issue: close PR-review gaps in alpha.1 validation hardening, including
   content-root-aware project validation, full restricted-YAML style checks, and
   segment-safe spec/decision path matching.
+- [x] Issue: close re-review correctness gaps in alpha.1 foundation work,
+  including exact frontmatter delimiter parsing, valid Go module/toolchain
+  directives, release metadata version alignment, and avoiding redundant
+  project-validation rereads.
 
 ### Exit Criteria
 
@@ -133,6 +137,9 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
   tag rejection without panic-based failure paths.
 - Whole-project validation follows `runecontext.yaml` source-root settings and
   rejects the remaining forbidden YAML styles (flow collections and multiline scalars).
+- Frontmatter parsing only accepts exact `---` delimiter lines, release metadata
+  matches the documented `v0.1.0-alpha.1` train, and Go module metadata is valid
+  for standard tooling.
 - Future alphas can build without reopening naming or ownership decisions.
 
 ### RuneCode Companion-Track Checkpoints

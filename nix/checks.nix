@@ -62,5 +62,6 @@ in
       '';
 }
 // lib.optionalAttrs (system == "x86_64-linux") {
+  # Release artifacts are checked on the canonical Linux release architecture.
   release-artifacts = releaseArtifacts;
 }

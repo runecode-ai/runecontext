@@ -7,3 +7,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Build outputs
+runectx
+vendor/

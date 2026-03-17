@@ -8,7 +8,10 @@ lint:
   just layout-check
 
 test:
-  nix build .#release-artifacts
+  go test ./...
+
+release-check:
+  nix build --no-link .#release-artifacts
 
 layout-check:
   test -f README.md
@@ -27,7 +30,9 @@ layout-check:
 check:
   nix flake check --no-write-lock-file
 
-ci: lint test check
+ci: lint test
+
+nix-ci: lint test release-check check
 
 release:
   nix build .#release-artifacts

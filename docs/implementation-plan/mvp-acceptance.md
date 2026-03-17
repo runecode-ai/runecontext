@@ -8,8 +8,8 @@
 - [ ] The canonical on-disk model is documented and stable.
 - [ ] The three-layer boundary between core, adapters, and RuneCode integration
   is explicit.
-- [ ] `runecontext.yaml`, bundle files, change-status files, and context packs
-  all have versioned schemas.
+- [ ] `runecontext.yaml`, bundle files, change-status files, context packs,
+  spec frontmatter, and decision frontmatter all have versioned schemas.
 - [ ] The restricted YAML profile and canonical JSON hashing rules are frozen.
 - [ ] Policy neutrality is explicit and tested: RuneContext text does not grant
   capabilities, approvals, or runtime authority.
@@ -79,14 +79,27 @@
 - [ ] The secondary/admin commands exist: `validate`, `doctor`,
   `standard discover`, `promote`, `assurance enable verified`, and
   `assurance backfill`.
+- [ ] Before alpha.6 is complete, any earlier validation entrypoints remain narrow
+  wrappers around the same core contracts rather than alternate semantics.
+- [ ] Before alpha.6 is complete, any earlier validation entrypoints use a
+  documented and tested machine-readable output contract.
+- [ ] Early validation entrypoints fail closed with structured diagnostics rather
+  than panics when schemas, YAML, markdown contracts, or project references are invalid.
+- [ ] Early validation entrypoints honor declared project content roots and the
+  full restricted-YAML profile rather than relying on default-path assumptions.
+- [ ] Alpha-stage release metadata, module metadata, and parser behavior stay
+  consistent with the documented release series and fail-closed contracts.
 - [ ] The adapter-management command exists: `runectx adapter sync <tool>`.
+- [ ] `runectx adapter sync <tool>` uses the installed or pinned RuneContext
+  release contents rather than implicitly fetching adapter packs from the
+  network.
 - [ ] Machine-facing flags exist and behave consistently: `--json`,
   `--non-interactive`, `--dry-run`, and `--explain`.
 - [ ] CLI behavior stays aligned with the canonical file model.
 
 ## 7. Adapters
 
-- [ ] The canonical command reference exists under `commands/`.
+- [ ] The canonical operations reference exists under `runecontext/operations/`.
 - [ ] The `generic` adapter exists.
 - [ ] The `claude-code`, `opencode`, and `codex` adapters exist.
 - [ ] Adapters differ in UX only, not in core semantics or source-of-truth
@@ -96,16 +109,27 @@
 ## 8. Release, Install, And Update
 
 - [ ] GitHub release artifacts exist for the repo-first distribution model.
+- [ ] The GitHub release workflow mirrors RuneCode's tag-driven build/publish
+  structure, including a protected publish step after unsigned assets are built.
+- [ ] `nix build .#release-artifacts` is the canonical unsigned release builder;
+  release publication uses those outputs rather than reassembling assets ad hoc
+  in workflow YAML.
 - [ ] Releases include schema bundle, adapter packs, checksums, release notes,
-  and compatibility information.
+  compatibility information, signatures, attestations, and an SBOM.
 - [ ] Optional `runectx` binaries are packaged.
+- [ ] Linux and macOS `runectx` binary archives are published as signed and
+  attested convenience assets without replacing the canonical repo bundles.
 - [ ] Manual repo install is documented and tested.
 - [ ] `runectx update` is diff-first and reviewable.
 - [ ] Adapter sync/update is namespaced and merge-aware.
+- [ ] Adapter sync materializes local tool files and config updates from the
+  installed release content rather than acting as a remote installer.
+- [ ] `runectx` makes no network calls outside explicit `init` and `update`
+  flows.
 - [ ] The following anti-patterns are absent: required global installs,
   bash-only installers, overwriting existing `.claude`/`.github` files,
-  hidden runtime-manager dependencies, template-only primary distribution, and
-  silent auto-updates.
+  hidden runtime-manager dependencies, template-only primary distribution,
+  implicit adapter-pack fetches during sync, and silent auto-updates.
 
 ## 9. RuneCode Readiness (Companion Track)
 

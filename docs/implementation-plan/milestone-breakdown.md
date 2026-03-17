@@ -19,72 +19,127 @@ that all later CLI, adapters, and RuneCode integration must share.
 
 ### Epic 1: Core terminology, boundaries, and ownership
 
-- [ ] Issue: publish the normative terminology and disambiguation set for
+- [x] Issue: publish the normative terminology and disambiguation set for
   `standard`, `project context`, `context bundle`, `context pack`, `change`,
   `spec`, and `decision`.
-- [ ] Issue: document the three-layer boundary between RuneContext Core,
+- [x] Issue: document the three-layer boundary between RuneContext Core,
   adapters, and RuneCode integration, including explicit non-responsibilities.
-- [ ] Issue: finalize the authoritative on-disk layout, including which files
+- [x] Issue: finalize the authoritative on-disk layout, including which files
   are hand-authored, generated, optional, or review-only.
-- [ ] Issue: codify the policy-neutrality rule so RuneContext text never
+- [x] Issue: codify the policy-neutrality rule so RuneContext text never
   becomes runtime authority.
-- [ ] Issue: codify the LLM input trust-boundary rule so RuneContext text is
+- [x] Issue: codify the LLM input trust-boundary rule so RuneContext text is
   treated as untrusted model input, not just untrusted policy input.
 
 ### Epic 2: Schema and file-contract baseline
 
-- [ ] Issue: author the schema and validation contract for root
+- [x] Issue: author the schema and validation contract for root
   `runecontext.yaml`, including `schema_version`, `runecontext_version`,
-  `assurance_tier`, and `source`.
-- [ ] Issue: author the schema and validation contract for `bundles/*.yaml`.
-- [ ] Issue: author the schema and validation contract for
-  `changes/*/status.yaml`.
-- [ ] Issue: codify the base `status.yaml` `type` enum plus the `x-` prefix rule
+  `assurance_tier`, `source`, and `allow_extensions` opt-in.
+- [x] Issue: author the schema and validation contract for `bundles/*.yaml`
+  with closed-schema defaults and optional `extensions` object.
+- [x] Issue: author the schema and validation contract for
+  `changes/*/status.yaml` with closed-schema defaults and optional `extensions`.
+- [x] Issue: codify the base `status.yaml` `type` enum plus the `x-` prefix rule
   for custom type values.
-- [ ] Issue: codify the `verification_status` enum values `pending`, `passed`,
+- [x] Issue: codify the `verification_status` enum values `pending`, `passed`,
   `failed`, and `skipped`.
-- [ ] Issue: define the normative `source_verification` enum values used by
-  linked commits, verified signed tags, mutable refs, and local path sources.
-- [ ] Issue: author the schema and validation contract for generated context
-  packs.
-- [ ] Issue: define the schema inventory for assurance baseline and receipt
-  artifacts so `alpha.5` can implement them without changing the contract
-  surface unexpectedly.
+- [x] Issue: define the normative `source_verification` enum values: `pinned_commit`,
+  `verified_signed_tag`, `unverified_mutable_ref`, `unverified_local_source`, `embedded`.
+- [x] Issue: author the schema and validation contract for generated context
+  packs (fully closed, no extensions in v1).
+- [x] Issue: define the schema inventory for assurance baseline and receipt
+  artifacts (closed schemas, deferred implementation to alpha.5).
+- [x] Issue: codify the restricted machine-readable YAML profile with no anchors,
+  aliases, duplicate keys, or custom tags; UTF-8 only; normalized formatting.
+- [x] Issue: define the canonical JSON data model for hashing derived from YAML.
+- [x] Issue: codify RFC 8785 JCS as the canonical hashing serialization; SHA256 for hash
+  algorithm.
+- [x] Issue: standardize on JSON Schema Draft 2020-12 so conditional variants can remain closed without reopening the core contracts.
+- [x] Issue: define unknown-field behavior: closed schemas by default; unknown
+  `schema_version` fails closed; optional `extensions` object (owner.name namespaces,
+  non-authoritative) allowed only when `runecontext.yaml` sets `allow_extensions: true`;
+  no extensions in generated artifacts.
 
 ### Epic 3: Markdown contract enforcement
 
-- [ ] Issue: define and validate the strict section ordering for `proposal.md`.
-- [ ] Issue: define the normalized structure and regeneration behavior for
-  `standards.md`.
-- [ ] Issue: define traceability metadata conventions for `specs/` and
+- [x] Issue: define and validate the strict section ordering for `proposal.md`:
+  Summary, Problem, Proposed Change, Why Now, Assumptions, Out of Scope, Impact
+  (in exact order, level-2 headings, each required or explicit N/A).
+- [x] Issue: define the normalized structure and regeneration behavior for
+  `standards.md`: Applicable Standards, Standards Added Since Last Refresh (optional),
+  Standards Considered But Excluded (optional), Resolution Notes (optional).
+  Auto-maintained by tooling; always present; reviewable diffs required.
+- [x] Issue: define traceability metadata conventions for `specs/` and
   `decisions/`.
 
 ### Epic 4: Canonical data rules
 
-- [ ] Issue: codify the restricted machine-readable YAML profile.
-- [ ] Issue: define the normalized JSON data model used for hashing.
-- [ ] Issue: codify RFC 8785 JCS as the canonical hashing serialization.
-- [ ] Issue: define unknown-field and unknown-schema-version behavior.
+Completed as part of Epic 2 (consolidated with schema contracts for better audit coverage).
 
 ### Epic 5: Testing foundation
 
-- [ ] Issue: define repository-wide test layers and coverage expectations for
+- [x] Issue: define repository-wide test layers and coverage expectations for
   unit tests, golden fixtures, CLI integration tests, adapter smoke tests, and
   reference-project tests.
-- [ ] Issue: define fixture taxonomy and storage conventions for schemas,
+- [x] Issue: define fixture taxonomy and storage conventions for schemas,
   markdown contracts, source resolution, context packs, assurance artifacts,
   and CLI JSON output.
-- [ ] Issue: establish the rule that new semantics cannot land without tests or
+- [x] Issue: establish the rule that new semantics cannot land without tests or
   fixtures in the same milestone.
+- [x] Issue: add a narrow executable validation entrypoint so alpha.1 contracts
+  can be enforced without waiting for the broader alpha.6 CLI surface.
+- [x] Issue: define a stable line-oriented machine output contract for the
+  narrow alpha.1 validation entrypoint without pre-empting the broader alpha.6
+  `--json` work.
+- [x] Issue: close review-identified fail-open gaps in the alpha.1 validation
+  foundation, including project-level markdown enforcement, bundle validation,
+  structured error handling, and restricted-YAML tag rejection.
+- [x] Issue: close PR-review gaps in alpha.1 validation hardening, including
+  content-root-aware project validation, full restricted-YAML style checks, and
+  segment-safe spec/decision path matching.
+- [x] Issue: close re-review correctness gaps in alpha.1 foundation work,
+  including exact frontmatter delimiter parsing, valid Go module/toolchain
+  directives, release metadata version alignment, and avoiding redundant
+  project-validation rereads.
 
 ### Exit Criteria
 
+- All v1 JSON schemas are authored and versioned: `runecontext.yaml`, `bundles/*.yaml`,
+  `changes/*/status.yaml`, `context-pack.yaml`.
+- The restricted YAML profile and canonical JSON/JCS hashing model are frozen.
+- The schema dialect is frozen at JSON Schema Draft 2020-12 for all v1 contracts.
+- Unknown-field behavior is explicit: closed schemas by default; optional `extensions`
+  object with namespaced keys; no extensions in generated artifacts.
+- Context-pack serialization shape is explicit enough to hash deterministically across implementations, including stable handling of empty aspect inventories.
+- Alpha-stage contract refinements must update generators, fixtures, and docs together before downstream consumers depend on the hash or schema shape.
+- Schema version 1 files must fail closed on unknown `schema_version` and unknown enum
+  values.
+- Markdown contracts for `proposal.md`, `standards.md`, `specs/*.md`, and
+  `decisions/*.md` are frozen with section ordering, frontmatter, path-matched IDs,
+  and regeneration rules where applicable.
+- The `allow_extensions: true` opt-in flag is defined in `runecontext.yaml` with visible
+  warning behavior.
 - The core file model is frozen enough for fixture generation.
-- The required v1 schemas and markdown contracts are identified and versioned.
 - The policy-neutrality rule is explicit and testable.
 - The LLM-input trust rule is explicit and testable.
 - The test strategy and fixture taxonomy are defined early enough to shape every
   later alpha.
+- An executable Go validation foundation exists for schema, markdown, YAML-profile,
+  and alpha.1 traceability rules.
+- A narrow `runectx validate [path]` entrypoint exists for whole-project contract
+  enforcement without pulling alpha.6 command breadth into alpha.1.
+- The alpha.1 validation entrypoint emits stable one-line `key=value` fields for
+  success, invalid, and usage-error outcomes so CI and scripts can consume it
+  before broader machine-facing flags land.
+- Whole-project validation now covers required change markdown files,
+  `runecontext/bundles/*.yaml`, extension opt-in enforcement, and restricted YAML
+  tag rejection without panic-based failure paths.
+- Whole-project validation follows `runecontext.yaml` source-root settings and
+  rejects the remaining forbidden YAML styles (flow collections and multiline scalars).
+- Frontmatter parsing only accepts exact `---` delimiter lines, release metadata
+  matches the documented `v0.1.0-alpha.1` train, and Go module metadata is valid
+  for standard tooling.
 - Future alphas can build without reopening naming or ownership decisions.
 
 ### RuneCode Companion-Track Checkpoints
@@ -479,18 +534,18 @@ automation, CI, debugging, and non-agent workflows.
   tests.
 - RuneCode can validate non-interactive behavior for remote/server workflows.
 
-## `v0.1.0-alpha.7` - Adapters And Command-Pack UX
+## `v0.1.0-alpha.7` - Adapters And Adapter-Pack UX
 
 Primary outcome: make RuneContext comfortable to use inside multiple coding
 tools while preserving one core model.
 
-### Epic 1: Canonical command reference
+### Epic 1: Canonical operations reference
 
-- [ ] Issue: author the canonical in-project command reference under
-  `commands/`.
+- [ ] Issue: author the canonical in-project operations reference under
+  `runecontext/operations/`.
 - [ ] Issue: define adapter-to-core operation mapping rules.
-- [ ] Issue: define how adapters consume or derive from canonical command docs
-  without redefining semantics.
+- [ ] Issue: define how adapters consume or derive from the canonical
+  operations reference without redefining semantics.
 
 ### Epic 2: Generic adapter
 
@@ -508,10 +563,17 @@ tools while preserving one core model.
 
 ### Epic 4: Adapter packaging and sync
 
-- [ ] Issue: implement adapter packaging for release artifacts.
+- [ ] Issue: implement adapter packaging for release artifacts as packs bundled
+  with the selected RuneContext release.
 - [ ] Issue: implement the `runectx adapter sync <tool>` command as the
-  adapter-management CLI surface.
-- [ ] Issue: define merge-aware adapter sync/update behavior.
+  adapter-management CLI surface for local adapter materialization from the
+  installed or pinned RuneContext release.
+- [ ] Issue: define merge-aware adapter sync/update behavior, including managed
+  file boundaries, reviewable diffs, and explicit local config updates where
+  required.
+- [ ] Issue: ensure adapter sync never fetches from GitHub or any other network
+  source; network access is reserved for explicit `runectx init` and
+  `runectx update` flows.
 - [ ] Issue: ensure adapters never introduce tool-specific source-of-truth
   files.
 
@@ -529,6 +591,8 @@ tools while preserving one core model.
 - At least one tool-specific adapter is usable end to end.
 - All adapters map back to the same underlying operations.
 - Users can still work directly with repo files and CLI without any adapter.
+- Adapter sync materializes the selected tool pack from the installed release
+  without requiring network access.
 - Adapter behavior is covered by parity and smoke tests rather than manual
   walkthroughs only.
 
@@ -546,19 +610,37 @@ install/update paths and end-to-end reference fixtures.
 
 ### Epic 1: Release packaging
 
-- [ ] Issue: package the schema bundle for releases.
+- [ ] Issue: establish CI/CD platform parity with RuneCode and mirror its
+  tag-driven release workflow shape:
+  - Primary: Linux (x86_64 and arm64) and macOS (x86_64 and arm64) via Nix.
+  - Portability: Windows via non-Nix smoke testing.
+- [ ] Issue: keep `nix build .#release-artifacts` as the canonical unsigned
+  release builder; workflow steps may verify, sign, attest, and publish assets
+  but must not redefine release contents outside the Nix build graph.
+- [ ] Issue: package the schema bundle for releases across supported platforms.
 - [ ] Issue: package adapter packs for releases.
-- [ ] Issue: package optional `runectx` binaries for supported platforms.
-- [ ] Issue: emit release checksums, release manifest, signatures, and release
-  notes.
+- [ ] Issue: package optional `runectx` binaries for primary supported platforms:
+  `linux/amd64`, `linux/arm64`, `darwin/amd64`, and `darwin/arm64`.
+- [ ] Issue: keep repo bundles as the canonical install and audit path even after
+  `runectx` binary archives are added as convenience assets.
+- [ ] Issue: verify pushed release tags against release metadata and fail closed
+  on mismatches before packaging or publication.
+- [ ] Issue: emit release checksums, release manifest, signatures,
+  attestations, SBOM, and release notes.
 - [ ] Issue: publish a RuneCode `<->` RuneContext compatibility matrix.
+- [ ] Issue: publish through a protected `release` environment after unsigned
+  assets are built and uploaded by the initial build job.
 
 ### Epic 2: Install and update flows
 
-- [ ] Issue: document and test the canonical manual repo-install flow.
+- [ ] Issue: document and test the canonical manual repo-install flow around
+  pinned GitHub release assets emitted by the Nix release builder.
+- [ ] Issue: implement `runectx init` and `runectx update` as the only CLI flows
+  allowed to make network calls.
 - [ ] Issue: implement `runectx update` as a diff-first, reviewable update
   flow.
-- [ ] Issue: harden adapter sync/update to be namespaced and merge-aware.
+- [ ] Issue: harden adapter sync/update to be namespaced and merge-aware, with
+  normal adapter sync remaining local-only against installed release content.
 - [ ] Issue: ensure `doctor` reports unsupported version combinations and
   integrity posture issues.
 
@@ -582,21 +664,27 @@ install/update paths and end-to-end reference fixtures.
 ### Epic 5: Release and workflow test hardening
 
 - [ ] Issue: add tests covering release artifact contents, checksums, manifests,
-  adapter packs, and optional binaries.
+  adapter packs, optional binaries, attestations, and SBOM outputs.
 - [ ] Issue: add end-to-end tests for manual repo install, CLI-managed install,
   and diff-first update flows.
 - [ ] Issue: add regression tests asserting forbidden install/update patterns do
   not appear: required global installs, bash-only installers, overwriting
   existing tool config files, hidden runtime-manager dependencies, and silent
   auto-updates.
+- [ ] Issue: add regression tests asserting adapter sync remains local-only and
+  never performs implicit network fetches.
 - [ ] Issue: add end-to-end tests over reference projects for embedded,
   linked-by-commit, linked-by-signed-tag, Verified-mode, and monorepo cases.
 
 ### Exit Criteria
 
 - RuneContext can be installed manually, managed by CLI, and updated reviewably.
+- The release workflow mirrors RuneCode's tag-driven build/publish split while
+  keeping RuneContext's unsigned asset set canonical in Nix.
 - Release artifacts are canonical, inspectable, and compatible with the repo-
   first distribution model.
+- Normal adapter sync is local-only; any network access is confined to explicit
+  `init` and `update` operations.
 - Signed-tag verification is included in MVP validation, not deferred.
 - Install, update, and release guarantees are backed by automated end-to-end
   tests.

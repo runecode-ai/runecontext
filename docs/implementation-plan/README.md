@@ -40,6 +40,8 @@ The MVP includes every v1 RuneContext feature described in
 - minimal CLI surface
 - thin adapters as the primary day-to-day UX
 - repo-first releases, reviewable updates, and compatibility documentation
+- signed and attested Linux/macOS `runectx` binaries as convenience release
+  assets alongside the canonical repo bundles
 
 The MVP does not include RuneCode-specific runtime implementation in this
 repository, but it does include the artifacts, semantics, fixtures, and
@@ -49,13 +51,13 @@ contracts RuneCode needs in order to integrate cleanly.
 
 | Release | Focus |
 | --- | --- |
-| `v0.1.0-alpha.1` | Core model, naming, file contracts, schemas, and canonical data rules |
+| `v0.1.0-alpha.1` | Core model, naming, file contracts, schemas, canonical data rules, and validation foundation |
 | `v0.1.0-alpha.2` | Source resolution, storage modes, monorepo support, and bundle semantics |
 | `v0.1.0-alpha.3` | Change workflow, standards linkage, traceability, and history preservation |
 | `v0.1.0-alpha.4` | Deterministic context packs, generated indexes, and promotion assessment |
 | `v0.1.0-alpha.5` | Plain/Verified assurance, baselines, receipts, and backfill |
 | `v0.1.0-alpha.6` | Minimal CLI, validation, doctoring, and machine-facing command contracts |
-| `v0.1.0-alpha.7` | Generic and tool-specific adapters plus command-pack UX |
+| `v0.1.0-alpha.7` | Generic and tool-specific adapters plus adapter-pack UX |
 | `v0.1.0-alpha.8` | Release/install/update hardening and end-to-end MVP readiness fixtures |
 | `v0.1.0` | Stabilization, compatibility freeze, and MVP acceptance sign-off |
 
@@ -79,8 +81,18 @@ provenance fields), and `alpha.8` (release/reference-project validation).
 - Keep the on-disk model, schemas, and resolution semantics canonical.
 - Treat adapters as UX layers, not alternate sources of truth.
 - Keep generated artifacts derived and reviewable.
+- Keep the release workflow as close as practical to RuneCode's tag-driven
+  build/publish split so users can audit one familiar release shape across both
+  repositories.
+- Keep Nix as the canonical source of unsigned release contents; GitHub Actions
+  verifies, signs, attests, and publishes those artifacts rather than
+  reassembling them ad hoc in workflow YAML.
 - Keep history at stable paths.
 - Keep policy, approvals, and runtime capability decisions outside RuneContext.
+- Keep normal adapter management local and reviewable; `runectx adapter sync
+  <tool>` materializes files from the already-installed RuneContext release and
+  must not fetch adapter packs implicitly.
+- Keep `runectx` network access limited to explicit `init` and `update` flows.
 - Treat RuneContext content as untrusted LLM input as well as untrusted policy
   input; rely on typed boundaries, review, and isolation rather than trusting
   the text itself.
@@ -100,8 +112,19 @@ until the end.
 - Add golden fixtures for deterministic outputs: resolved bundles, context
   packs, pack hashes, manifests, baselines, receipts, and machine-readable CLI
   output.
+- Add parser and project fixtures for markdown contracts and traceability rules,
+  including `proposal.md`, `standards.md`, `specs/*.md`, and `decisions/*.md`.
+- Make whole-project validation exercise the same alpha-stage contracts the docs
+  claim are enforced; do not leave parser-only checks unwired.
+- Validate against the project's declared content root instead of assuming a
+  fixed embedded directory name when alpha-stage source settings allow variation.
+- Keep release metadata, module metadata, and executable validation behavior in
+  sync with the documented alpha train so foundational tooling does not drift.
 - Add CLI integration tests for write flows, non-interactive behavior, dry-run
   behavior, explain output, and failure classes.
+- Before full `--json` lands, narrow early CLI commands may use stable
+  line-oriented machine output if that contract is explicitly documented and
+  tested.
 - Add adapter smoke tests and reference-project tests so UX layers stay aligned
   with the same core semantics.
 - Add RuneCode companion parity fixtures wherever this repository defines a

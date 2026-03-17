@@ -222,18 +222,18 @@ auditable, and safe for future local/remote parity.
 
 ### Epic 1: Source modes and discovery
 
-- [ ] Issue: implement embedded-mode RuneContext resolution.
-- [ ] Issue: implement linked git source resolution by pinned commit SHA.
+- [x] Issue: implement embedded-mode RuneContext resolution.
+- [x] Issue: implement linked git source resolution by pinned commit SHA.
 - [x] Issue: implement linked git source resolution by signed tag, including
   trusted-signer verification using explicit caller-supplied trust inputs,
   resolved signer identity capture, `expect_commit` validation, and fail-closed
   mismatch behavior.
-- [ ] Issue: implement linked git source resolution by mutable ref with
+- [x] Issue: implement linked git source resolution by mutable ref with
   required `allow_mutable_ref` opt-in and visible warnings.
-- [ ] Issue: implement local path source resolution with `unverified_local_source`
+- [x] Issue: implement local path source resolution with `unverified_local_source`
   posture, bounded symlink handling, and snapshot-oriented source-tree capture
   for later hashing/integrity flows.
-- [ ] Issue: implement monorepo nearest-ancestor discovery and selected-config
+- [x] Issue: implement monorepo nearest-ancestor discovery and selected-config
   reporting as structured resolution metadata.
 
 ### Epic 2: Context bundle semantics

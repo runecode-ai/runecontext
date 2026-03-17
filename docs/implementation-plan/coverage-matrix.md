@@ -78,6 +78,9 @@ plan so it is clear that the planning documents capture the full design.
   - Planned capture: `alpha.2`
 - Decision: linked sources prefer immutable commits or verified signed tags.
   - Planned capture: `alpha.2`, `alpha.8`
+- Decision: signed-tag verification must use explicitly supplied trusted-signer
+  inputs rather than hidden machine-global trust configuration.
+  - Planned capture: `alpha.2`
 - Decision: project root config carries `runecontext_version` and
   `assurance_tier`.
   - Planned capture: `alpha.1`, `alpha.2`
@@ -108,6 +111,13 @@ plan so it is clear that the planning documents capture the full design.
   - Planned capture: `alpha.4`
 - Decision: users must be able to use embedded or dedicated-repo storage.
   - Planned capture: `alpha.2`, `alpha.8`
+- Decision: bundle rules and generated inventories use consistent
+  RuneContext-root-relative paths, while the aspect key constrains the allowed
+  subtree and mismatches fail closed.
+  - Planned capture: `alpha.2`, `alpha.4`
+- Decision: `type: path` remote/CI invalidity should be controlled by explicit
+  caller mode rather than environment inference.
+  - Planned capture: `alpha.2`
 - Decision: adapters are the primary UX; CLI is the power-user and automation
   surface.
   - Planned capture: `alpha.6`, `alpha.7`

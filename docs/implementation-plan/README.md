@@ -52,7 +52,7 @@ contracts RuneCode needs in order to integrate cleanly.
 | Release | Focus |
 | --- | --- |
 | `v0.1.0-alpha.1` | Core model, naming, file contracts, schemas, canonical data rules, and validation foundation |
-| `v0.1.0-alpha.2` | Source resolution, storage modes, monorepo support, and bundle semantics |
+| `v0.1.0-alpha.2` | Source resolution, explicit trust/integrity handling, monorepo support, and deterministic bundle semantics |
 | `v0.1.0-alpha.3` | Change workflow, standards linkage, traceability, and history preservation |
 | `v0.1.0-alpha.4` | Deterministic context packs, generated indexes, and promotion assessment |
 | `v0.1.0-alpha.5` | Plain/Verified assurance, baselines, receipts, and backfill |
@@ -62,7 +62,8 @@ contracts RuneCode needs in order to integrate cleanly.
 | `v0.1.0` | Stabilization, compatibility freeze, and MVP acceptance sign-off |
 
 Signed-tag verification is intentionally part of the MVP and is planned across
-`alpha.2` (resolution/integrity implementation), `alpha.4` (context-pack
+`alpha.2` (resolution/integrity implementation using explicit trusted-signer
+inputs rather than hidden machine-global trust state), `alpha.4` (context-pack
 provenance fields), and `alpha.8` (release/reference-project validation).
 
 ## Document Index

@@ -155,19 +155,45 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
 Primary outcome: make storage modes and bundle semantics deterministic,
 auditable, and safe for future local/remote parity.
 
+### Implementation Notes
+
+- Bundle rules, diagnostics, and generated file inventories should use
+  RuneContext-root-relative paths consistently (for example,
+  `project/mission.md` and `standards/security/**`). The aspect key still
+  constrains the allowed subtree, and mismatched aspect/path combinations must
+  fail closed.
+- Source resolution should return structured metadata that later alpha.4,
+  alpha.5, and RuneCode audit flows can reuse without semantic translation.
+  That metadata should include the selected config path, project root,
+  RuneContext source root, source mode, source ref, resolved commit when
+  applicable, verification posture, and warnings/diagnostics.
+- Signed-tag verification must rely on explicitly supplied trusted-signer
+  inputs on the trusted side. Alpha.2 should not depend on hidden machine-
+  global Git, GPG, or home-directory trust configuration for correctness.
+- `type: path` invalidity for remote/CI usage should be driven by an explicit
+  caller-supplied execution mode rather than environment sniffing.
+- Symlinks may be followed only when their fully resolved targets remain inside
+  both the RuneContext root and the selected aspect root; otherwise resolution
+  must fail closed.
+- Alpha.2 should capture concrete per-glob match sets and structured
+  diagnostics so later CLI and context-pack flows can compare changed match
+  sets without inventing hidden persistent state in this milestone.
+
 ### Epic 1: Source modes and discovery
 
 - [ ] Issue: implement embedded-mode RuneContext resolution.
 - [ ] Issue: implement linked git source resolution by pinned commit SHA.
 - [ ] Issue: implement linked git source resolution by signed tag, including
-  trusted-signer verification, resolved signer identity capture, `expect_commit`
-  validation, and fail-closed mismatch behavior.
+  trusted-signer verification using explicit caller-supplied trust inputs,
+  resolved signer identity capture, `expect_commit` validation, and fail-closed
+  mismatch behavior.
 - [ ] Issue: implement linked git source resolution by mutable ref with
   required `allow_mutable_ref` opt-in and visible warnings.
 - [ ] Issue: implement local path source resolution with `unverified_local_source`
-  posture, bounded symlink handling, and snapshot-before-hash behavior.
+  posture, bounded symlink handling, and snapshot-oriented source-tree capture
+  for later hashing/integrity flows.
 - [ ] Issue: implement monorepo nearest-ancestor discovery and selected-config
-  reporting.
+  reporting as structured resolution metadata.
 
 ### Epic 2: Context bundle semantics
 
@@ -178,9 +204,11 @@ auditable, and safe for future local/remote parity.
 - [ ] Issue: implement inheritance cycle rejection and maximum depth `8`
   enforcement.
 - [ ] Issue: implement ordered include/exclude rule evaluation with
-  last-matching-rule-wins semantics per aspect family.
+  last-matching-rule-wins semantics per aspect family over RuneContext-root-
+  relative bundle paths.
 - [ ] Issue: implement exact-path, glob, and authoring-time diagnostics for
-  missing paths and changed match sets.
+  missing paths and changed match sets, including concrete per-rule matched file
+  inventories for later comparison.
 
 ### Epic 3: Path and integrity guardrails
 
@@ -189,8 +217,10 @@ auditable, and safe for future local/remote parity.
 - [ ] Issue: reject files that escape the RuneContext root or selected aspect
   roots through traversal or symlink resolution.
 - [ ] Issue: record resolved source metadata, including source mode, resolved
-  commit, verification posture, and signed-tag signer details when present.
-- [ ] Issue: define remote/CI invalidity rules for `type: path` sources.
+  commit, verification posture, selected config path, source root, warning set,
+  and signed-tag signer details when present.
+- [ ] Issue: define remote/CI invalidity rules for `type: path` sources through
+  explicit caller-supplied execution mode rather than environment inference.
 
 ### Epic 4: Resolution tests and fixtures
 
@@ -206,8 +236,16 @@ auditable, and safe for future local/remote parity.
 - Embedded, linked, and path-based projects all resolve under one consistent
   model.
 - Signed-tag verification is supported as an advanced MVP path.
+- Signed-tag verification uses explicit trusted-signer inputs rather than hidden
+  machine-global trust state.
+- Monorepo discovery reports the selected config path and source metadata in a
+  structured form that later CLI and audit flows can reuse.
 - Bundle inheritance behaves deterministically across override and diamond cases.
+- Bundle rules and generated inventories use one consistent RuneContext-root-
+  relative path model with aspect-boundary enforcement.
 - Resolution fails closed for cycles, escapes, and integrity mismatches.
+- `type: path` resolution is explicitly invalid in remote/CI mode unless a
+  higher-level trusted wrapper deliberately downgrades the run.
 - Shared fixtures exist for every supported source mode and precedence rule.
 
 ### RuneCode Companion-Track Checkpoints

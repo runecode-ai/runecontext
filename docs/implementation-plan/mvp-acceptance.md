@@ -21,13 +21,19 @@
 - [ ] Embedded mode works.
 - [ ] Linked git mode by pinned commit works.
 - [ ] Linked git mode by signed tag works, including trusted-signer validation,
-  expected-commit checking, and fail-closed mismatch behavior.
+  expected-commit checking, fail-closed mismatch behavior, and explicit trusted-
+  signer inputs rather than hidden machine-global trust state.
 - [ ] Mutable refs require explicit opt-in and warnings.
 - [ ] Local path sources work for developer-local usage and are marked
   unverified/non-auditable.
-- [ ] Monorepo nearest-root discovery works.
+- [ ] Local path sources are invalid for remote/CI mode unless a higher-level
+  trusted wrapper explicitly downgrades the run.
+- [ ] Monorepo nearest-root discovery works and reports the selected config path
+  as structured metadata.
 - [ ] Bundle resolution is deterministic, cycle-safe, depth-limited, and path-
   boundary-safe.
+- [ ] Bundle rules, diagnostics, and generated inventories use one consistent
+  RuneContext-root-relative path model with aspect-boundary enforcement.
 
 ## 3. Change Workflow And Standards
 

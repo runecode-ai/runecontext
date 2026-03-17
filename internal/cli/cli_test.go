@@ -57,7 +57,7 @@ func TestRunValidateNearestAncestorDiscoveryReportsSelectedConfig(t *testing.T) 
 	if code != 0 {
 		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
 	}
-	normalizedStdout := filepath.ToSlash(stdout.String())
+	normalizedStdout := filepath.ToSlash(strings.ReplaceAll(stdout.String(), "\\\\", "\\"))
 	if !strings.Contains(normalizedStdout, "selected_config_path=") || !strings.Contains(normalizedStdout, "packages/service/runecontext.yaml") {
 		t.Fatalf("expected nested selected config path, got %q", stdout.String())
 	}

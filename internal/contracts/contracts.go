@@ -163,8 +163,12 @@ func (v *Validator) ParseDecision(path string, data []byte) (*FrontmatterDocumen
 }
 
 func (v *Validator) ValidateTraceabilityProject(root string) error {
-	_, err := v.ValidateProject(root)
-	return err
+	index, err := v.ValidateProject(root)
+	if err != nil {
+		return err
+	}
+	defer index.Close()
+	return nil
 }
 
 func (v *Validator) ValidateProject(root string) (*ProjectIndex, error) {

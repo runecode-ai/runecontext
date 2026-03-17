@@ -14,11 +14,31 @@ import (
 )
 
 var (
-	gitCommitPattern   = regexp.MustCompile(`^[a-f0-9]{40}$`)
-	gitRefPattern      = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
-	gitCommandTimeout  = 30 * time.Second
-	gitURLControlChars = "\x00\r\n\t"
+	gitCommitPattern    = regexp.MustCompile(`^[a-f0-9]{40}$`)
+	gitRefPattern       = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
+	gitCommandTimeout   = 30 * time.Second
+	gitURLControlChars  = "\x00\r\n\t"
+	localSnapshotLimits = snapshotLimits{
+		MaxFiles: 10000,
+		MaxBytes: 128 << 20,
+		MaxDepth: 64,
+		Excludes: map[string]struct{}{
+			".git": {},
+		},
+	}
 )
+
+type snapshotLimits struct {
+	MaxFiles int
+	MaxBytes int64
+	MaxDepth int
+	Excludes map[string]struct{}
+}
+
+type snapshotState struct {
+	files int
+	bytes int64
+}
 
 type ExecutionMode string
 
@@ -482,6 +502,26 @@ func validateGitRef(ref string) error {
 	if !gitRefPattern.MatchString(ref) {
 		return fmt.Errorf("git ref contains unsupported characters")
 	}
+	if strings.Contains(ref, "..") {
+		return fmt.Errorf("git ref must not contain '..'")
+	}
+	if strings.Contains(ref, "//") {
+		return fmt.Errorf("git ref must not contain consecutive '/'")
+	}
+	if strings.HasPrefix(ref, "/") || strings.HasSuffix(ref, "/") {
+		return fmt.Errorf("git ref must not start or end with '/'")
+	}
+	if strings.HasSuffix(ref, ".lock") {
+		return fmt.Errorf("git ref must not end with '.lock'")
+	}
+	for _, segment := range strings.Split(ref, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return fmt.Errorf("git ref contains an invalid path segment")
+		}
+		if strings.HasPrefix(segment, ".") {
+			return fmt.Errorf("git ref segments must not start with '.'")
+		}
+	}
 	return nil
 }
 
@@ -502,14 +542,17 @@ func snapshotLocalTree(sourceRoot string) (*LocalSourceTree, error) {
 		return nil, err
 	}
 	snapshotRoot := filepath.Join(tempRoot, "snapshot")
-	if err := copyResolvedTree(realRoot, snapshotRoot, realRoot, map[string]struct{}{}); err != nil {
+	if err := copyResolvedTree(realRoot, snapshotRoot, realRoot, map[string]struct{}{}, localSnapshotLimits, &snapshotState{}, 0); err != nil {
 		_ = os.RemoveAll(tempRoot)
 		return nil, err
 	}
 	return &LocalSourceTree{Root: snapshotRoot, SnapshotKind: "snapshot_copy", cleanupRoot: tempRoot}, nil
 }
 
-func copyResolvedTree(sourcePath, destPath, root string, active map[string]struct{}) error {
+func copyResolvedTree(sourcePath, destPath, root string, active map[string]struct{}, limits snapshotLimits, state *snapshotState, depth int) error {
+	if depth > limits.MaxDepth {
+		return fmt.Errorf("local source tree exceeds maximum depth of %d", limits.MaxDepth)
+	}
 	resolved, err := filepath.EvalSymlinks(sourcePath)
 	if err != nil {
 		return err
@@ -528,6 +571,11 @@ func copyResolvedTree(sourcePath, destPath, root string, active map[string]struc
 		return err
 	}
 	if info.IsDir() {
+		if depth > 0 {
+			if _, excluded := limits.Excludes[filepath.Base(resolved)]; excluded {
+				return nil
+			}
+		}
 		if err := os.MkdirAll(destPath, 0o755); err != nil {
 			return err
 		}
@@ -538,7 +586,7 @@ func copyResolvedTree(sourcePath, destPath, root string, active map[string]struc
 		for _, entry := range entries {
 			childSource := filepath.Join(resolved, entry.Name())
 			childDest := filepath.Join(destPath, entry.Name())
-			if err := copyResolvedTree(childSource, childDest, root, active); err != nil {
+			if err := copyResolvedTree(childSource, childDest, root, active, limits, state, depth+1); err != nil {
 				return err
 			}
 		}
@@ -549,6 +597,14 @@ func copyResolvedTree(sourcePath, destPath, root string, active map[string]struc
 	}
 	if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
 		return err
+	}
+	state.files++
+	if state.files > limits.MaxFiles {
+		return fmt.Errorf("local source tree exceeds maximum file count of %d", limits.MaxFiles)
+	}
+	state.bytes += info.Size()
+	if state.bytes > limits.MaxBytes {
+		return fmt.Errorf("local source tree exceeds maximum snapshot size of %d bytes", limits.MaxBytes)
 	}
 	src, err := os.Open(resolved)
 	if err != nil {

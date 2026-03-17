@@ -33,6 +33,8 @@
 - [ ] Git source resolution validates URL/ref/commit inputs, rejects option-like
   values, disables interactive prompting, and does not depend on hidden host
   credentials or global Git config for correctness.
+- [ ] Mutable git refs reject obviously invalid ref syntax before subprocess
+  execution rather than relying on fetch failures alone.
 - [ ] RuneContext does not use environment variables as user-facing
   configuration or semantic inputs; correctness-critical behavior comes from
   repo state, explicit config, or caller-supplied options only.
@@ -42,6 +44,10 @@
   direct fetch-by-SHA behavior.
 - [ ] Monorepo nearest-root discovery works and reports the selected config path
   as structured metadata.
+- [ ] Local path snapshots exclude `.git/` and fail closed when practical
+  snapshot depth, file-count, or byte-size limits are exceeded.
+- [ ] Validation entrypoints clean up any temporary source materializations after
+  successful validation as well as on error.
 - [ ] Bundle resolution is deterministic, cycle-safe, depth-limited, and path-
   boundary-safe.
 - [ ] Bundle rules, diagnostics, and generated inventories use one consistent

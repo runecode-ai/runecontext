@@ -176,6 +176,8 @@ auditable, and safe for future local/remote parity.
   invoking git, reject option-like values, run with an explicit minimal
   subprocess environment, and disable interactive prompting so correctness does
   not depend on hidden host credentials or config.
+- Mutable git refs should be validated more strictly than a broad character
+  whitelist so obviously invalid refs fail before any subprocess execution.
 - RuneContext should not expose environment-variable configuration or use
   environment variables as semantic inputs. Correctness-critical behavior must
   come from repository state, explicit config files, or caller-supplied options.
@@ -193,6 +195,12 @@ auditable, and safe for future local/remote parity.
 - Symlinks may be followed only when their fully resolved targets remain inside
   both the RuneContext root and the selected aspect root; otherwise resolution
   must fail closed.
+- Local path snapshots should exclude obvious repository-control directories like
+  `.git/` and fail closed when practical depth, file-count, or byte-size bounds
+  are exceeded, so alpha.2 snapshotting remains usable without silently copying
+  arbitrarily large trees.
+- Validation entrypoints that materialize temporary source trees must close and
+  clean up those trees on success as well as failure.
 - Alpha.2 should capture concrete per-glob match sets and structured
   diagnostics so later CLI and context-pack flows can compare changed match
   sets without inventing hidden persistent state in this milestone.

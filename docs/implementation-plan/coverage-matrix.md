@@ -89,12 +89,21 @@ plan so it is clear that the planning documents capture the full design.
 - Decision: git source resolution must reject option-like URL/ref values, avoid
   hidden host credentials/config, and run with explicit subprocess timeouts.
   - Planned capture: `alpha.2`
+- Decision: mutable git refs should fail fast on obviously invalid ref syntax
+  before any git subprocess is invoked.
+  - Planned capture: `alpha.2`
 - Decision: RuneContext should not rely on environment variables for
   user-facing configuration or correctness-critical semantics; only minimal
   non-semantic process environment plumbing is allowed.
   - Planned capture: `alpha.2`, `alpha.6`
 - Decision: pinned-commit git resolution must not assume remote support for
   direct fetch-by-SHA.
+  - Planned capture: `alpha.2`
+- Decision: local path snapshotting should exclude obvious repo-control
+  directories and apply practical file/depth/byte limits.
+  - Planned capture: `alpha.2`, `alpha.4`
+- Decision: validation helpers that materialize temporary source trees must own
+  cleanup on both success and failure paths.
   - Planned capture: `alpha.2`
 - Decision: project root config carries `runecontext_version` and
   `assurance_tier`.

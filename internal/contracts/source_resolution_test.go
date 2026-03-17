@@ -178,6 +178,22 @@ func TestSourceResolutionRejectsUnsafeGitInputs(t *testing.T) {
 		}
 	})
 
+	t.Run("ref contains dot dot", func(t *testing.T) {
+		projectRoot := writeRootConfigProject(t, "schema_version: 1\nrunecontext_version: 0.1.0-alpha.2\nassurance_tier: plain\nsource:\n  type: git\n  url: "+repoDir+"\n  ref: feature..branch\n  allow_mutable_ref: true\n  subdir: runecontext\n")
+		_, err := v.LoadProject(projectRoot, ResolveOptions{ConfigDiscovery: ConfigDiscoveryExplicitRoot, ExecutionMode: ExecutionModeLocal})
+		if err == nil || !strings.Contains(err.Error(), "must not contain '..'") {
+			t.Fatalf("expected dot-dot git ref to fail, got %v", err)
+		}
+	})
+
+	t.Run("ref ends with slash", func(t *testing.T) {
+		projectRoot := writeRootConfigProject(t, "schema_version: 1\nrunecontext_version: 0.1.0-alpha.2\nassurance_tier: plain\nsource:\n  type: git\n  url: "+repoDir+"\n  ref: feature/\n  allow_mutable_ref: true\n  subdir: runecontext\n")
+		_, err := v.LoadProject(projectRoot, ResolveOptions{ConfigDiscovery: ConfigDiscoveryExplicitRoot, ExecutionMode: ExecutionModeLocal})
+		if err == nil || !strings.Contains(err.Error(), "start or end with '/'") {
+			t.Fatalf("expected trailing-slash git ref to fail, got %v", err)
+		}
+	})
+
 	t.Run("subdir escapes repo", func(t *testing.T) {
 		projectRoot := writeRootConfigProject(t, "schema_version: 1\nrunecontext_version: 0.1.0-alpha.2\nassurance_tier: plain\nsource:\n  type: git\n  url: "+repoDir+"\n  commit: "+commit+"\n  subdir: ../outside\n")
 		_, err := v.LoadProject(projectRoot, ResolveOptions{ConfigDiscovery: ConfigDiscoveryExplicitRoot, ExecutionMode: ExecutionModeLocal})
@@ -236,6 +252,60 @@ func TestSourceResolutionRejectsPathSymlinkCycle(t *testing.T) {
 	_, err := v.LoadProject(projectRoot, ResolveOptions{ConfigDiscovery: ConfigDiscoveryExplicitRoot, ExecutionMode: ExecutionModeLocal})
 	if err == nil || !strings.Contains(err.Error(), "symlink cycle detected") {
 		t.Fatalf("expected path symlink cycle to fail, got %v", err)
+	}
+}
+
+func TestSourceResolutionSkipsDotGitDirectoryInSnapshots(t *testing.T) {
+	v := NewValidator(schemaRoot(t))
+	projectRoot := t.TempDir()
+	localRoot := filepath.Join(projectRoot, "local-runecontext")
+	gitDir := filepath.Join(localRoot, ".git")
+	if err := os.MkdirAll(gitDir, 0o755); err != nil {
+		t.Fatalf("mkdir .git dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(gitDir, "HEAD"), []byte("ref: refs/heads/main\n"), 0o644); err != nil {
+		t.Fatalf("write fake git head: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(localRoot, "changes", "CHG-2026-001-a3f2-source-resolution"), 0o755); err != nil {
+		t.Fatalf("mkdir changes dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(localRoot, "changes", "CHG-2026-001-a3f2-source-resolution", "status.yaml"), []byte("schema_version: 1\nid: CHG-2026-001-a3f2-source-resolution\ntitle: Test snapshot exclusions\nstatus: proposed\ntype: feature\nsize: small\nverification_status: pending\ncontext_bundles: []\nrelated_specs: []\nrelated_decisions: []\nrelated_changes: []\ndepends_on: []\ninformed_by: []\nsupersedes: []\nsuperseded_by: []\ncreated_at: \"2026-03-17\"\nclosed_at: null\npromotion_assessment:\n  status: pending\n  suggested_targets: []\n"), 0o644); err != nil {
+		t.Fatalf("write status file: %v", err)
+	}
+	rootConfig := "schema_version: 1\nrunecontext_version: 0.1.0-alpha.2\nassurance_tier: plain\nsource:\n  type: path\n  path: local-runecontext\n"
+	if err := os.WriteFile(filepath.Join(projectRoot, "runecontext.yaml"), []byte(rootConfig), 0o644); err != nil {
+		t.Fatalf("write root config: %v", err)
+	}
+
+	loaded, err := v.LoadProject(projectRoot, ResolveOptions{ConfigDiscovery: ConfigDiscoveryExplicitRoot, ExecutionMode: ExecutionModeLocal})
+	if err != nil {
+		t.Fatalf("expected path source with .git directory to resolve: %v", err)
+	}
+	defer loaded.Close()
+	if _, err := os.Stat(filepath.Join(loaded.Resolution.MaterializedRoot(), ".git")); !os.IsNotExist(err) {
+		t.Fatalf("expected snapshot to exclude .git directory, got err=%v", err)
+	}
+}
+
+func TestSourceResolutionRejectsOversizedPathSnapshot(t *testing.T) {
+	v := NewValidator(schemaRoot(t))
+	projectRoot := t.TempDir()
+	localRoot := filepath.Join(projectRoot, "local-runecontext")
+	if err := os.MkdirAll(localRoot, 0o755); err != nil {
+		t.Fatalf("mkdir local root: %v", err)
+	}
+	data := strings.Repeat("a", int(localSnapshotLimits.MaxBytes)+1)
+	if err := os.WriteFile(filepath.Join(localRoot, "large.txt"), []byte(data), 0o644); err != nil {
+		t.Fatalf("write oversized file: %v", err)
+	}
+	rootConfig := "schema_version: 1\nrunecontext_version: 0.1.0-alpha.2\nassurance_tier: plain\nsource:\n  type: path\n  path: local-runecontext\n"
+	if err := os.WriteFile(filepath.Join(projectRoot, "runecontext.yaml"), []byte(rootConfig), 0o644); err != nil {
+		t.Fatalf("write root config: %v", err)
+	}
+
+	_, err := v.LoadProject(projectRoot, ResolveOptions{ConfigDiscovery: ConfigDiscoveryExplicitRoot, ExecutionMode: ExecutionModeLocal})
+	if err == nil || !strings.Contains(err.Error(), "maximum snapshot size") {
+		t.Fatalf("expected oversized snapshot to fail, got %v", err)
 	}
 }
 

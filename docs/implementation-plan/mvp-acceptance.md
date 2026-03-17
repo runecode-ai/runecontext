@@ -38,6 +38,10 @@
 - [ ] Git source resolution rejects remote-helper URL forms, constrains allowed
   transport protocols explicitly, and redacts transport secrets from surfaced
   subprocess errors.
+- [ ] Git source verification surfaces executable/process failures as actionable
+  diagnostics and avoids over-redacting normal git ref/reflog syntax.
+- [ ] Signed-tag verification timeouts and explicit trust-input parse failures
+  also fail closed with structured, machine-readable diagnostics.
 - [ ] Mutable git refs reject obviously invalid ref syntax before subprocess
   execution rather than relying on fetch failures alone.
 - [ ] RuneContext does not use environment variables as user-facing

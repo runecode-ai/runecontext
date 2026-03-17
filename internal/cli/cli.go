@@ -195,9 +195,15 @@ func parseValidateArgs(args []string) (validateRequest, error) {
 				return validateRequest{}, fmt.Errorf("--ssh-allowed-signers requires a path")
 			}
 			i++
-			allowedSignersPath = args[i]
+			allowedSignersPath = strings.TrimSpace(args[i])
+			if allowedSignersPath == "" {
+				return validateRequest{}, fmt.Errorf("--ssh-allowed-signers requires a path")
+			}
 		case strings.HasPrefix(arg, "--ssh-allowed-signers="):
-			allowedSignersPath = strings.TrimPrefix(arg, "--ssh-allowed-signers=")
+			allowedSignersPath = strings.TrimSpace(strings.TrimPrefix(arg, "--ssh-allowed-signers="))
+			if allowedSignersPath == "" {
+				return validateRequest{}, fmt.Errorf("--ssh-allowed-signers requires a path")
+			}
 		case strings.HasPrefix(arg, "-"):
 			return validateRequest{}, fmt.Errorf("unknown validate flag %q", arg)
 		default:

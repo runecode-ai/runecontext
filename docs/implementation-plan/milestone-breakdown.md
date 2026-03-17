@@ -282,6 +282,10 @@ auditable, and safe for future local/remote parity.
 - Narrow alpha.2 validation entrypoints can accept explicit signed-tag trust
   material and surface structured failure reasons/diagnostics without inventing
   hidden trust discovery.
+- Signed-tag verification and surfaced git diagnostics preserve actionable
+  execution failures and avoid over-redacting normal git reflog syntax.
+- Signed-tag timeout failures retain structured verification diagnostics, and
+  explicit trust-input parsing rejects blank values before filesystem access.
 - Monorepo discovery reports the selected config path and source metadata in a
   structured form that later CLI and audit flows can reuse.
 - Bundle inheritance behaves deterministically across override and diamond cases.

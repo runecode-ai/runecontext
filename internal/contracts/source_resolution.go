@@ -20,8 +20,10 @@ var (
 	gitRefPattern       = regexp.MustCompile(`^[A-Za-z0-9._/-]+$`)
 	gitURLSchemePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z0-9+.-]*://`)
 	gitCommandTimeout   = 30 * time.Second
+	gitExecutable       = "git"
 	gitURLControlChars  = "\x00\r\n\t"
 	gitAllowedProtocols = []string{"file", "git", "http", "https", "ssh"}
+	gitCommandRunner    = runGitCommandContext
 	localSnapshotLimits = snapshotLimits{
 		MaxFiles: 10000,
 		MaxBytes: 128 << 20,
@@ -145,13 +147,27 @@ func (e *SignedTagVerificationError) Unwrap() error {
 
 type SSHAllowedSignersVerifier struct {
 	allowedSigners []byte
+	gitExecutable  string
 }
 
 func NewSSHAllowedSignersVerifier(allowedSigners []byte) (*SSHAllowedSignersVerifier, error) {
 	if len(bytes.TrimSpace(allowedSigners)) == 0 {
 		return nil, fmt.Errorf("ssh allowed signers data must not be empty")
 	}
-	return &SSHAllowedSignersVerifier{allowedSigners: append([]byte(nil), allowedSigners...)}, nil
+	return &SSHAllowedSignersVerifier{allowedSigners: append([]byte(nil), allowedSigners...), gitExecutable: gitExecutable}, nil
+}
+
+func NewSSHAllowedSignersVerifierWithGitExecutable(allowedSigners []byte, executable string) (*SSHAllowedSignersVerifier, error) {
+	verifier, err := NewSSHAllowedSignersVerifier(allowedSigners)
+	if err != nil {
+		return nil, err
+	}
+	executable = strings.TrimSpace(executable)
+	if executable == "" {
+		return nil, fmt.Errorf("git executable must not be empty")
+	}
+	verifier.gitExecutable = executable
+	return verifier, nil
 }
 
 type ResolutionDiagnostic struct {
@@ -203,11 +219,38 @@ func (v *SSHAllowedSignersVerifier) VerifySignedTag(repoRoot, tagName string) (*
 		return nil, err
 	}
 	result := runGitCaptured(
-		append([]string{}, "-C", repoRoot, "-c", "gpg.format=ssh", "-c", "gpg.ssh.allowedSignersFile="+allowedSignersPath, "verify-tag", "--raw", tagName),
+		v.gitCommandArgs(repoRoot, allowedSignersPath, tagName),
+		v.gitExecutable,
 	)
 	output := strings.TrimSpace(result.Output)
 	if result.TimedOut {
-		return nil, fmt.Errorf("git %s: command timed out after %s", sanitizeGitArgs(result.Args), gitCommandTimeout)
+		message := fmt.Sprintf("signed tag %q verification failed: git %s: command timed out after %s", tagName, sanitizeGitArgs(result.Args), gitCommandTimeout)
+		return nil, &SignedTagVerificationError{
+			Tag:     tagName,
+			Reason:  SignedTagFailureVerificationFailed,
+			Message: message,
+			Diagnostics: []ResolutionDiagnostic{{
+				Severity: DiagnosticSeverityError,
+				Code:     string(SignedTagFailureVerificationFailed),
+				Message:  message,
+			}},
+		}
+	}
+	if result.Err != nil && result.ExitCode == -1 {
+		message := sanitizeGitMessage(strings.TrimSpace(result.Output))
+		if message == "" {
+			message = sanitizeGitMessage(result.Err.Error())
+		}
+		return nil, &SignedTagVerificationError{
+			Tag:     tagName,
+			Reason:  SignedTagFailureVerificationFailed,
+			Message: fmt.Sprintf("signed tag %q verification failed: %s", tagName, message),
+			Diagnostics: []ResolutionDiagnostic{{
+				Severity: DiagnosticSeverityError,
+				Code:     string(SignedTagFailureVerificationFailed),
+				Message:  fmt.Sprintf("signed tag %q verification failed: %s", tagName, message),
+			}},
+		}
 	}
 	if result.ExitCode == 0 {
 		identity, fingerprint, err := parseTrustedSSHVerifyTagOutput(output)
@@ -231,6 +274,10 @@ func (v *SSHAllowedSignersVerifier) VerifySignedTag(repoRoot, tagName string) (*
 			Message:  message,
 		}},
 	}
+}
+
+func (v *SSHAllowedSignersVerifier) gitCommandArgs(repoRoot, allowedSignersPath, tagName string) []string {
+	return []string{"-C", repoRoot, "-c", "gpg.format=ssh", "-c", "gpg.ssh.allowedSignersFile=" + allowedSignersPath, "verify-tag", "--raw", tagName}
 }
 
 func validateSignedTagVerification(verification *SignedTagVerification, tagName string) error {
@@ -1010,7 +1057,7 @@ func (r gitResolver) finalizeMaterializedTree(tempRoot, repoRoot, subdir string)
 }
 
 func runGit(args ...string) error {
-	result := runGitCaptured(args)
+	result := runGitCaptured(args, gitExecutable)
 	if result.TimedOut {
 		return fmt.Errorf("git %s: command timed out after %s", sanitizeGitArgs(result.Args), gitCommandTimeout)
 	}
@@ -1025,7 +1072,7 @@ func runGit(args ...string) error {
 }
 
 func gitOutput(args ...string) (string, error) {
-	result := runGitCaptured(args)
+	result := runGitCaptured(args, gitExecutable)
 	if result.TimedOut {
 		return "", fmt.Errorf("git %s: command timed out after %s", sanitizeGitArgs(result.Args), gitCommandTimeout)
 	}
@@ -1039,12 +1086,10 @@ func gitOutput(args ...string) (string, error) {
 	return result.Output, nil
 }
 
-func runGitCaptured(args []string) gitCommandResult {
+func runGitCaptured(args []string, executable string) gitCommandResult {
 	ctx, cancel := context.WithTimeout(context.Background(), gitCommandTimeout)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "git", args...)
-	cmd.Env = sanitizedGitEnv()
-	output, err := cmd.CombinedOutput()
+	output, err := gitCommandRunner(ctx, executable, args, sanitizedGitEnv())
 	result := gitCommandResult{
 		Args:   append([]string(nil), args...),
 		Output: string(output),
@@ -1063,6 +1108,12 @@ func runGitCaptured(args []string) gitCommandResult {
 		return result
 	}
 	return result
+}
+
+func runGitCommandContext(ctx context.Context, executable string, args []string, env []string) ([]byte, error) {
+	cmd := exec.CommandContext(ctx, executable, args...)
+	cmd.Env = env
+	return cmd.CombinedOutput()
 }
 
 func parseTrustedSSHVerifyTagOutput(output string) (string, string, error) {
@@ -1084,7 +1135,7 @@ func parseTrustedSSHVerifyTagOutput(output string) (string, string, error) {
 		}
 		identity := strings.TrimSpace(identitySection[:withIndex])
 		fingerprint := strings.TrimSpace(remainder[fingerprintIndex+1:])
-		if identity == "" || fingerprint == "" {
+		if identity == "" || fingerprint == "" || !strings.HasPrefix(fingerprint, "SHA256:") {
 			continue
 		}
 		return identity, fingerprint, nil
@@ -1229,10 +1280,20 @@ func sanitizeGitMessage(message string) string {
 			trimmed = trimmed[:idx] + "<redacted-url>" + trimmed[end:]
 		}
 	}
+	searchFrom := 0
 	for {
-		at := strings.Index(trimmed, "@")
-		if at <= 0 {
+		rel := strings.Index(trimmed[searchFrom:], "@")
+		if rel < 0 {
 			break
+		}
+		at := searchFrom + rel
+		if at <= 0 {
+			searchFrom = at + 1
+			continue
+		}
+		if at+1 < len(trimmed) && trimmed[at+1] == '{' {
+			searchFrom = at + 1
+			continue
 		}
 		start := strings.LastIndexAny(trimmed[:at], " /\n\r\t\"")
 		if start < 0 {
@@ -1245,6 +1306,7 @@ func sanitizeGitMessage(message string) string {
 			end++
 		}
 		trimmed = trimmed[:start] + "<redacted-identity>" + trimmed[end:]
+		searchFrom = start + len("<redacted-identity>")
 	}
 	return trimmed
 }

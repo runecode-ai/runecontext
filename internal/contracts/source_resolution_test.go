@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSourceResolutionEmbeddedGolden(t *testing.T) {
@@ -481,6 +483,77 @@ func TestSanitizeGitMessageRedactsURLsAndCredentials(t *testing.T) {
 	}
 }
 
+func TestSanitizeGitMessagePreservesReflogSyntax(t *testing.T) {
+	for _, message := range []string{
+		"fatal: ambiguous argument HEAD@{upstream}: unknown revision",
+		"fatal: ambiguous argument HEAD@{0}: unknown revision",
+		"fatal: ambiguous argument refs/heads/main@{yesterday}: unknown revision",
+	} {
+		sanitized := sanitizeGitMessage(message)
+		if !strings.Contains(sanitized, "@{") {
+			t.Fatalf("expected reflog syntax to be preserved, got %q", sanitized)
+		}
+		if strings.Contains(sanitized, "<redacted-identity>") {
+			t.Fatalf("expected reflog syntax to avoid identity redaction, got %q", sanitized)
+		}
+	}
+}
+
+func TestSSHAllowedSignersVerifierSurfacesGitExecutionFailures(t *testing.T) {
+	verifier, err := NewSSHAllowedSignersVerifierWithGitExecutable([]byte("alice@example.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5XQmFkRHVtbXlLZXlNYXRlcmlhbEZvclRlc3Rz\n"), filepath.Join(t.TempDir(), "missing-git"))
+	if err != nil {
+		t.Fatalf("create verifier: %v", err)
+	}
+
+	_, err = verifier.VerifySignedTag(t.TempDir(), "v1.0.0")
+	var verificationErr *SignedTagVerificationError
+	if !errors.As(err, &verificationErr) {
+		t.Fatalf("expected signed-tag verification error, got %v", err)
+	}
+	if verificationErr.Reason != SignedTagFailureVerificationFailed {
+		t.Fatalf("expected verification_failed reason, got %q", verificationErr.Reason)
+	}
+	if verificationErr.Message == "" {
+		t.Fatal("expected non-empty execution failure detail")
+	}
+	if len(verificationErr.Diagnostics) == 0 {
+		t.Fatal("expected execution failure diagnostic")
+	}
+	if verificationErr.Diagnostics[0].Code != string(SignedTagFailureVerificationFailed) {
+		t.Fatalf("expected verification_failed diagnostic code, got %q", verificationErr.Diagnostics[0].Code)
+	}
+}
+
+func TestSSHAllowedSignersVerifierSurfacesGitTimeoutsAsStructuredFailures(t *testing.T) {
+	verifier, err := NewSSHAllowedSignersVerifier([]byte("alice@example.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE5XQmFkRHVtbXlLZXlNYXRlcmlhbEZvclRlc3Rz\n"))
+	if err != nil {
+		t.Fatalf("create verifier: %v", err)
+	}
+	originalTimeout := gitCommandTimeout
+	originalRunner := gitCommandRunner
+	gitCommandTimeout = 10 * time.Millisecond
+	t.Cleanup(func() {
+		gitCommandTimeout = originalTimeout
+		gitCommandRunner = originalRunner
+	})
+	gitCommandRunner = func(ctx context.Context, executable string, args []string, env []string) ([]byte, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	}
+
+	_, err = verifier.VerifySignedTag(t.TempDir(), "v1.0.0")
+	var verificationErr *SignedTagVerificationError
+	if !errors.As(err, &verificationErr) {
+		t.Fatalf("expected signed-tag verification error, got %v", err)
+	}
+	if verificationErr.Reason != SignedTagFailureVerificationFailed {
+		t.Fatalf("expected verification_failed reason, got %q", verificationErr.Reason)
+	}
+	if !strings.Contains(verificationErr.Message, "timed out") {
+		t.Fatalf("expected timeout detail, got %q", verificationErr.Message)
+	}
+}
+
 func TestParseTrustedSSHVerifyTagOutputAcceptsIdentityContainingWith(t *testing.T) {
 	identity, fingerprint, err := parseTrustedSSHVerifyTagOutput(`Good "git" signature for Team with Ops <ops@example.com> with ED25519 key SHA256:abc123`)
 	if err != nil {
@@ -491,6 +564,24 @@ func TestParseTrustedSSHVerifyTagOutputAcceptsIdentityContainingWith(t *testing.
 	}
 	if fingerprint != "SHA256:abc123" {
 		t.Fatalf("expected fingerprint capture, got %q", fingerprint)
+	}
+}
+
+func TestParseTrustedSSHVerifyTagOutputRejectsUnexpectedFingerprintPrefix(t *testing.T) {
+	_, _, err := parseTrustedSSHVerifyTagOutput(`Good "git" signature for Team Ops <ops@example.com> with ED25519 key MD5:abc123`)
+	if err == nil {
+		t.Fatal("expected parser to reject non-SHA256 fingerprint")
+	}
+}
+
+func TestSanitizeGitMessageRedactsMultipleIdentityTokensAndSCPLikeHost(t *testing.T) {
+	message := "fetch failed for git@github.com:runecode-systems/runecontext and admin@example.org and trailing user@"
+	sanitized := sanitizeGitMessage(message)
+	if strings.Contains(sanitized, "git@github.com") || strings.Contains(sanitized, "admin@example.org") || strings.Contains(sanitized, "user@") {
+		t.Fatalf("expected identities to be redacted, got %q", sanitized)
+	}
+	if strings.Count(sanitized, "<redacted-identity>") < 2 {
+		t.Fatalf("expected multiple identity redactions, got %q", sanitized)
 	}
 }
 

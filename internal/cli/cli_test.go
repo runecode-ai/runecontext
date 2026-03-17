@@ -250,6 +250,45 @@ func TestRunValidateRejectsMissingAllowedSignersPath(t *testing.T) {
 	}
 }
 
+func TestRunValidateRejectsEmptyAllowedSignersEqualsValue(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"validate", "--ssh-allowed-signers="}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "requires a path") {
+		t.Fatalf("expected empty-value usage output, got %q", stderr.String())
+	}
+}
+
+func TestRunValidateRejectsEmptyAllowedSignersSeparateValue(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"validate", "--ssh-allowed-signers", ""}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "requires a path") {
+		t.Fatalf("expected empty separate-value usage output, got %q", stderr.String())
+	}
+}
+
+func TestRunValidateRejectsBlankAllowedSignersEqualsValue(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"validate", "--ssh-allowed-signers=   "}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "requires a path") {
+		t.Fatalf("expected blank equals-value usage output, got %q", stderr.String())
+	}
+}
+
 func TestRunUnknownCommand(t *testing.T) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer

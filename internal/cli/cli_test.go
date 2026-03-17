@@ -57,10 +57,11 @@ func TestRunValidateNearestAncestorDiscoveryReportsSelectedConfig(t *testing.T) 
 	if code != 0 {
 		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
 	}
-	if !strings.Contains(stdout.String(), "selected_config_path=") || !strings.Contains(stdout.String(), "packages/service/runecontext.yaml") {
+	normalizedStdout := filepath.ToSlash(stdout.String())
+	if !strings.Contains(normalizedStdout, "selected_config_path=") || !strings.Contains(normalizedStdout, "packages/service/runecontext.yaml") {
 		t.Fatalf("expected nested selected config path, got %q", stdout.String())
 	}
-	if !strings.Contains(stdout.String(), "project_root=") || !strings.Contains(stdout.String(), "packages/service") {
+	if !strings.Contains(normalizedStdout, "project_root=") || !strings.Contains(normalizedStdout, "packages/service") {
 		t.Fatalf("expected nested project root, got %q", stdout.String())
 	}
 }

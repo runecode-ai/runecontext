@@ -224,7 +224,7 @@ auditable, and safe for future local/remote parity.
 
 - [ ] Issue: implement embedded-mode RuneContext resolution.
 - [ ] Issue: implement linked git source resolution by pinned commit SHA.
-- [ ] Issue: implement linked git source resolution by signed tag, including
+- [x] Issue: implement linked git source resolution by signed tag, including
   trusted-signer verification using explicit caller-supplied trust inputs,
   resolved signer identity capture, `expect_commit` validation, and fail-closed
   mismatch behavior.
@@ -265,7 +265,7 @@ auditable, and safe for future local/remote parity.
 
 ### Epic 4: Resolution tests and fixtures
 
-- [ ] Issue: add unit tests for embedded, linked-by-commit, linked-by-signed-
+- [x] Issue: add unit tests for embedded, linked-by-commit, linked-by-signed-
   tag, mutable-ref, and path-based source resolution.
 - [x] Issue: add unit and golden tests for bundle precedence, cycle rejection,
   depth rejection, glob changes, and path-escape failures.
@@ -279,6 +279,16 @@ auditable, and safe for future local/remote parity.
 - Signed-tag verification is supported as an advanced MVP path.
 - Signed-tag verification uses explicit trusted-signer inputs rather than hidden
   machine-global trust state.
+- Narrow alpha.2 validation entrypoints can accept explicit signed-tag trust
+  material and surface structured failure reasons/diagnostics without inventing
+  hidden trust discovery.
+- Signed-tag verification and surfaced git diagnostics preserve actionable
+  execution failures and avoid over-redacting normal git reflog syntax.
+- Signed-tag timeout failures retain structured verification diagnostics, and
+  explicit trust-input parsing rejects blank values before filesystem access.
+- Signed-tag validation rejects empty `expect_commit` values with a clear
+  caller-facing error rather than a confusing placeholder-derived format
+  failure.
 - Monorepo discovery reports the selected config path and source metadata in a
   structured form that later CLI and audit flows can reuse.
 - Bundle inheritance behaves deterministically across override and diamond cases.

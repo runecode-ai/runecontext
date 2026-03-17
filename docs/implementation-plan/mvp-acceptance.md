@@ -38,6 +38,12 @@
 - [ ] Git source resolution rejects remote-helper URL forms, constrains allowed
   transport protocols explicitly, and redacts transport secrets from surfaced
   subprocess errors.
+- [ ] Git source verification surfaces executable/process failures as actionable
+  diagnostics and avoids over-redacting normal git ref/reflog syntax.
+- [ ] Signed-tag verification timeouts and explicit trust-input parse failures
+  also fail closed with structured, machine-readable diagnostics.
+- [ ] Signed-tag verification rejects empty `expect_commit` values with a clear
+  validation error before commit-format checks run.
 - [ ] Mutable git refs reject obviously invalid ref syntax before subprocess
   execution rather than relying on fetch failures alone.
 - [ ] RuneContext does not use environment variables as user-facing
@@ -120,6 +126,9 @@
   wrappers around the same core contracts rather than alternate semantics.
 - [ ] Before alpha.6 is complete, any earlier validation entrypoints use a
   documented and tested machine-readable output contract.
+- [ ] Before alpha.6 is complete, any earlier validation entrypoints that expose
+  signed-tag verification accept explicit trust inputs from the caller and
+  surface structured signed-tag failure reasons/diagnostics.
 - [ ] Early validation entrypoints fail closed with structured diagnostics rather
   than panics when schemas, YAML, markdown contracts, or project references are invalid.
 - [ ] Early validation entrypoints honor declared project content roots and the

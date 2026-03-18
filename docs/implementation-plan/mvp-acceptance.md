@@ -76,7 +76,11 @@
 
 - [ ] Every substantive work item gets a stable change ID.
 - [ ] Minimum mode works with `status.yaml`, `proposal.md`, and `standards.md`.
-- [ ] Full mode works by materializing deeper files only when needed.
+- [ ] Shaped work defaults to `design.md` and `verification.md`, while
+  `tasks.md` and `references.md` remain supplemental files created only when
+  they are needed and contain real content.
+- [ ] `change shape` is additive/idempotent and does not behave like a
+  destructive regeneration pass over authored files.
 - [ ] Large or high-risk work is prompted or inferred toward full mode early,
   and non-interactive shaping rationale remains reviewable.
 - [ ] Work-type and size branching rules exist for project, feature, bug,
@@ -89,8 +93,13 @@
   bodies.
 - [ ] Standards frontmatter validation, deprecation, and rename/migration rules
   work.
+- [ ] Standards migration uses one canonical `replaced_by` path-reference form
+  rather than mixed path/id ambiguity.
 - [ ] Cross-artifact references in change metadata validate cleanly or produce
   clear diagnostics.
+- [ ] Machine-readable traceability stays artifact-level, and human-readable
+  markdown can use machine-validated `path#heading-fragment` deep refs without
+  relying on brittle line numbers.
 - [ ] Multiple non-closed changes can coexist without requiring one global
   active-change slot for the repository.
 - [ ] Large features can be represented as an umbrella change plus linked
@@ -98,6 +107,8 @@
   `depends_on` prerequisites.
 - [ ] Change-splitting flows and validation preserve consistent `depends_on` /
   `related_changes` wiring when one sub-change must land before others.
+- [ ] `superseded` works as a terminal successor state distinct from `closed`
+  and preserves reciprocal supersession links.
 - [ ] Closed changes remain directly accessible at stable paths.
 
 ## 4. Context Packs, Promotion, And Indexes
@@ -116,9 +127,16 @@
 
 - [ ] Plain mode works without extra assurance artifacts.
 - [ ] Verified mode can be enabled and persisted in `runecontext.yaml`.
+- [ ] Plain and Verified use the same authored workflow and repository source
+  model; Verified adds portable evidence requirements rather than alternate
+  source-of-truth files.
 - [ ] Verified mode generates a baseline artifact.
 - [ ] Verified mode generates receipt families for context packs, changes,
   promotions, and verifications.
+- [ ] Standalone `runectx` can generate the same minimal portable receipt set
+  that a Verified repository requires for mixed-team collaboration.
+- [ ] RuneCode may attach richer parallel audit evidence without becoming the
+  only place correctness-critical assurance state lives.
 - [ ] Receipt filenames are collision-resistant and do not require a shared
   mutable index.
 - [ ] Backfill can generate imported historical provenance distinct from native
@@ -128,11 +146,16 @@
 
 - [ ] The primary CLI commands exist: `init`, `status`, `change new`,
   `change shape`, `bundle resolve`, and `change close`.
+- [ ] `runectx status` can at minimum report active, closed, and superseded
+  changes without requiring a single repository-wide active-change slot.
 - [ ] The secondary/admin commands exist: `validate`, `doctor`,
   `standard discover`, `promote`, `assurance enable verified`, and
   `assurance backfill`.
 - [ ] Before alpha.6 is complete, any earlier validation entrypoints remain narrow
   wrappers around the same core contracts rather than alternate semantics.
+- [ ] Before alpha.6 is complete, any earlier `status`, `change new`,
+  `change shape`, and `change close` entrypoints remain narrow wrappers around
+  the same core operations rather than alternate semantics.
 - [ ] Before alpha.6 is complete, any earlier validation entrypoints use a
   documented and tested machine-readable output contract.
 - [ ] Before alpha.6 is complete, any earlier validation entrypoints that expose
@@ -159,6 +182,9 @@
 - [ ] The `claude-code`, `opencode`, and `codex` adapters exist.
 - [ ] Adapters differ in UX only, not in core semantics or source-of-truth
   files.
+- [ ] Adapter-driven edits to authoritative RuneContext files automatically run
+  `runectx validate` and surface failures before the workflow step is treated as
+  complete.
 - [ ] Adapters are packaged for release.
 
 ## 8. Release, Install, And Update
@@ -199,6 +225,8 @@ RuneContext makes them possible and testable.
 - [ ] RuneCode can validate linked signed-tag sources in audited flows.
 - [ ] RuneCode can consume receipt and baseline fixtures without asking
   RuneContext to change core semantics.
+- [ ] RuneCode can consume the same portable Verified receipts emitted by
+  standalone `runectx` while also attaching richer parallel audit evidence.
 
 ## 10. Explicitly Not Required For `v0.1.0`
 

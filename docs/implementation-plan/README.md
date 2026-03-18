@@ -37,7 +37,7 @@ The MVP includes every v1 RuneContext feature described in
 - explicit caller-supplied signed-tag trust inputs for narrow alpha-stage
   validation entrypoints
 - deterministic bundle resolution and context-pack hashing
-- minimum and full change shapes
+- minimum and lean shaped/full change shapes
 - Plain and Verified assurance tiers
 - minimal CLI surface
 - thin adapters as the primary day-to-day UX
@@ -55,10 +55,10 @@ contracts RuneCode needs in order to integrate cleanly.
 | --- | --- |
 | `v0.1.0-alpha.1` | Core model, naming, file contracts, schemas, canonical data rules, and validation foundation |
 | `v0.1.0-alpha.2` | Source resolution, explicit trust/integrity handling, monorepo support, and deterministic bundle semantics |
-| `v0.1.0-alpha.3` | Change workflow, standards linkage, traceability, and history preservation |
+| `v0.1.0-alpha.3` | Change workflow, standards linkage, traceability, history preservation, and thin change/status operations |
 | `v0.1.0-alpha.4` | Deterministic context packs, generated indexes, and promotion assessment |
 | `v0.1.0-alpha.5` | Plain/Verified assurance, baselines, receipts, and backfill |
-| `v0.1.0-alpha.6` | Minimal CLI, validation, doctoring, and machine-facing command contracts |
+| `v0.1.0-alpha.6` | Broadened CLI, validation, doctoring, and machine-facing command contracts |
 | `v0.1.0-alpha.7` | Generic and tool-specific adapters plus adapter-pack UX |
 | `v0.1.0-alpha.8` | Release/install/update hardening and end-to-end MVP readiness fixtures |
 | `v0.1.0` | Stabilization, compatibility freeze, and MVP acceptance sign-off |
@@ -98,6 +98,14 @@ provenance fields), and `alpha.8` (release/reference-project validation).
 - Keep the on-disk model, schemas, and resolution semantics canonical.
 - Treat adapters as UX layers, not alternate sources of truth.
 - Keep generated artifacts derived and reviewable.
+- Keep one core authored workflow across `plain` and `verified`; higher
+  assurance adds evidence rather than alternate source-of-truth files.
+- Keep repositories self-sufficient for mixed standalone RuneContext and
+  RuneCode teams; RuneCode evidence may be richer but must remain additive
+  rather than required for correctness.
+- Keep shaped change docs lean: `design.md` and `verification.md` are the
+  default shaped artifacts, while `tasks.md` and `references.md` are created
+  only when they add real value.
 - Keep the release workflow as close as practical to RuneCode's tag-driven
   build/publish split so users can audit one familiar release shape across both
   repositories.
@@ -131,6 +139,8 @@ until the end.
   output.
 - Add parser and project fixtures for markdown contracts and traceability rules,
   including `proposal.md`, `standards.md`, `specs/*.md`, and `decisions/*.md`.
+- Add parser and project fixtures for machine-validated heading-fragment refs so
+  deep links remain human-readable without relying on brittle line numbers.
 - Make whole-project validation exercise the same alpha-stage contracts the docs
   claim are enforced; do not leave parser-only checks unwired.
 - Validate against the project's declared content root instead of assuming a
@@ -144,6 +154,8 @@ until the end.
   tested.
 - Add adapter smoke tests and reference-project tests so UX layers stay aligned
   with the same core semantics.
+- Add adapter tests ensuring that mutations to authoritative RuneContext files
+  automatically trigger `runectx validate` and surface failures immediately.
 - Add RuneCode companion parity fixtures wherever this repository defines a
   contract RuneCode will later consume.
 - Do not treat a feature as complete in any alpha until the tests and fixtures

@@ -379,40 +379,40 @@ with stable IDs, lightweight shaping, and reviewable standards linkage.
 
 ### Recommended Branch Cut 1: Change identity, lifecycle, stable-path history, and traceability core
 
-- [ ] Issue: implement year-scoped change ID allocation with monotonic counter
+- [x] Issue: implement year-scoped change ID allocation with monotonic counter
   plus collision-resistant suffix.
-- [ ] Issue: implement lifecycle state validation for `proposed`, `planned`,
+- [x] Issue: implement lifecycle state validation for `proposed`, `planned`,
   `implemented`, `verified`, `closed`, and `superseded`.
-- [ ] Issue: define terminal-state invariants so `superseded` is distinct from
+- [x] Issue: define terminal-state invariants so `superseded` is distinct from
   `closed`, requires successor references, and still records terminal metadata
   such as `closed_at` consistently.
-- [ ] Issue: implement bidirectional supersession consistency checks.
-- [ ] Issue: implement close behavior that updates state without moving change
+- [x] Issue: implement bidirectional supersession consistency checks.
+- [x] Issue: implement close behavior that updates state without moving change
   folders into an archive tree.
-- [ ] Issue: define concurrent-open-change behavior so multiple non-closed
+- [x] Issue: define concurrent-open-change behavior so multiple non-closed
   changes can coexist without requiring one global active change for the whole
   repository.
-- [ ] Issue: implement artifact-level traceability fields connecting changes,
+- [x] Issue: implement artifact-level traceability fields connecting changes,
   specs, and decisions.
-- [ ] Issue: validate that `depends_on`, `informed_by`, `related_changes`,
+- [x] Issue: validate that `depends_on`, `informed_by`, `related_changes`,
   `related_specs`, and `related_decisions` resolve to real artifacts or report
   clear diagnostics.
-- [ ] Issue: define asymmetric graph semantics so `depends_on` and
+- [x] Issue: define asymmetric graph semantics so `depends_on` and
   `informed_by` remain directional while `related_changes` stays reciprocal for
   navigation.
-- [ ] Issue: implement machine-validated deep-link refs in markdown using
+- [x] Issue: implement machine-validated deep-link refs in markdown using
   stable `path#heading-fragment` syntax rather than line-number references.
-- [ ] Issue: implement heading-fragment rename/move rewriting for tool-assisted
+- [x] Issue: implement heading-fragment rename/move rewriting for tool-assisted
   file renames and scoped markdown reference updates.
-- [ ] Issue: implement split-change helpers and validation rules so umbrella
+- [x] Issue: implement split-change helpers and validation rules so umbrella
   changes and sub-changes wire `related_changes` and directional `depends_on`
   links consistently when prerequisite ordering matters.
-- [ ] Issue: allow split-change `depends_on` edges to reference external
+- [x] Issue: allow split-change `depends_on` edges to reference external
   prerequisite changes while still rejecting self-dependencies and intra-split
   dependency cycles.
-- [ ] Issue: ensure closed and superseded changes remain directly readable at
+- [x] Issue: ensure closed and superseded changes remain directly readable at
   stable paths.
-- [ ] Issue: define the minimum traceability needed for future lineage/index
+- [x] Issue: define the minimum traceability needed for future lineage/index
   tooling without building that lineage view yet.
 
 ### Recommended Branch Cut 2: Standards authoring and migration semantics
@@ -479,18 +479,18 @@ standards linkage, and thin change/status commands
 
 ### Cross-Cutting Workflow Tests and Fixtures
 
-- [ ] Issue: add unit tests for change ID allocation, lifecycle transitions,
+- [x] Issue: add unit tests for change ID allocation, lifecycle transitions,
   supersession consistency, and collision reallocation behavior.
-- [ ] Issue: add tests for terminal-state invariants, reciprocal
+- [x] Issue: add tests for terminal-state invariants, reciprocal
   `related_changes`, directional `depends_on`/`informed_by` semantics, and
   heading-fragment ref validation.
-- [ ] Issue: add parser/validator tests for `proposal.md`, `standards.md`, and
+- [x] Issue: add parser/validator tests for `proposal.md`, `standards.md`, and
   deep-link markdown reference contracts.
 - [ ] Issue: add golden fixtures for minimum-mode, shaped, supplemental-doc,
   closed, and superseded change folders.
 - [ ] Issue: add tests for dangling cross-artifact references, heading-fragment
   rewrite behavior, and standards-maintenance review-diff behavior.
-- [ ] Issue: add tests ensuring fenced code examples do not validate or rewrite
+- [x] Issue: add tests ensuring fenced code examples do not validate or rewrite
   as live deep refs, and that absolute or traversal-style markdown deep-ref
   paths fail closed.
 

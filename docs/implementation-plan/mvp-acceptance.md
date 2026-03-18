@@ -77,6 +77,8 @@
 - [ ] Every substantive work item gets a stable change ID.
 - [ ] Minimum mode works with `status.yaml`, `proposal.md`, and `standards.md`.
 - [ ] Full mode works by materializing deeper files only when needed.
+- [ ] Large or high-risk work is prompted or inferred toward full mode early,
+  and non-interactive shaping rationale remains reviewable.
 - [ ] Work-type and size branching rules exist for project, feature, bug,
   standard, and chore changes.
 - [ ] Ask-more versus infer-more heuristics exist and inferred assumptions are
@@ -89,6 +91,13 @@
   work.
 - [ ] Cross-artifact references in change metadata validate cleanly or produce
   clear diagnostics.
+- [ ] Multiple non-closed changes can coexist without requiring one global
+  active-change slot for the repository.
+- [ ] Large features can be represented as an umbrella change plus linked
+  sub-changes using navigable `related_changes` links and directional
+  `depends_on` prerequisites.
+- [ ] Change-splitting flows and validation preserve consistent `depends_on` /
+  `related_changes` wiring when one sub-change must land before others.
 - [ ] Closed changes remain directly accessible at stable paths.
 
 ## 4. Context Packs, Promotion, And Indexes

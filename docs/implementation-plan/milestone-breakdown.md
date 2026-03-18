@@ -312,6 +312,24 @@ auditable, and safe for future local/remote parity.
 Primary outcome: make RuneContext usable as a change-oriented workflow system
 with stable IDs, lightweight shaping, and reviewable standards linkage.
 
+### Implementation Notes
+
+- Multiple non-closed changes may exist at the same time. RuneContext should not
+  require one global active-change slot for the whole repository; instead,
+  tooling should surface open versus closed work clearly and let specific runs
+  select the relevant active change or changes.
+- Very large or high-risk work should usually start as one minimum-mode change
+  and then move into full mode early. `change new` should be able to recommend
+  or directly trigger shaping when the requested work appears too large,
+  ambiguous, or risky for minimum mode.
+- When a large feature is split into an umbrella change plus smaller sub-
+  changes, RuneContext should model that as a linked graph of changes rather
+  than a hidden alternate hierarchy. `related_changes` keeps the graph
+  navigable; directional `depends_on` links capture prerequisite ordering.
+- Tooling should help create and preserve those links when work is split, and
+  validation should fail clearly when prerequisite or related-change references
+  are missing, inconsistent, or no longer resolve.
+
 ### Epic 1: Change identity and lifecycle
 
 - [ ] Issue: implement year-scoped change ID allocation with monotonic counter
@@ -334,6 +352,9 @@ with stable IDs, lightweight shaping, and reviewable standards linkage.
   consistently.
 - [ ] Issue: define size and risk escalation rules so `small`, `medium`, and
   `large` work items shape correctly.
+- [ ] Issue: implement `change new` heuristics that recommend or immediately
+  trigger full-mode shaping when a requested change appears too large,
+  ambiguous, or high-risk for minimum mode.
 - [ ] Issue: define the deeper intake checklist for new-project work, including
   mission, target users, stack/runtime constraints, deployment/security
   constraints, success criteria, and non-goals.
@@ -370,11 +391,17 @@ with stable IDs, lightweight shaping, and reviewable standards linkage.
 
 - [ ] Issue: implement close behavior that updates state without moving change
   folders into an archive tree.
+- [ ] Issue: define concurrent-open-change behavior so multiple non-closed
+  changes can coexist without requiring one global active change for the whole
+  repository.
 - [ ] Issue: implement traceability fields connecting changes, specs, and
   decisions.
 - [ ] Issue: validate that `depends_on`, `informed_by`, `related_changes`,
   `related_specs`, and `related_decisions` resolve to real artifacts or report
   clear diagnostics.
+- [ ] Issue: implement split-change helpers and validation rules so umbrella
+  changes and sub-changes wire `related_changes` and directional `depends_on`
+  links consistently when prerequisite ordering matters.
 - [ ] Issue: ensure closed changes remain directly readable at stable paths.
 - [ ] Issue: define the minimum traceability needed for future lineage/index
   tooling without building that lineage view yet.
@@ -394,9 +421,16 @@ with stable IDs, lightweight shaping, and reviewable standards linkage.
 
 - Every substantive work item can start in minimum mode and deepen only when
   needed.
+- Large or high-risk work is pushed toward full mode early enough that minimum
+  mode does not become a hiding place for under-shaped work.
 - `proposal.md` is the canonical reviewable intent artifact.
 - `standards.md` is always present and reviewably maintained.
 - Change history stays accessible at stable paths.
+- Multiple non-closed changes can coexist, and status/reporting flows do not
+  depend on a single repository-wide active-change slot.
+- Large features can be represented as an umbrella change plus linked
+  sub-changes with consistent `related_changes` and prerequisite `depends_on`
+  edges.
 - Minimum/full-mode branching and prompting heuristics are both tested.
 
 ### RuneCode Companion-Track Checkpoints

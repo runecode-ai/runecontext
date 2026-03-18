@@ -68,6 +68,20 @@ Signed-tag verification is intentionally part of the MVP and is planned across
 inputs rather than hidden machine-global trust state), `alpha.4` (context-pack
 provenance fields), and `alpha.8` (release/reference-project validation).
 
+## Dogfooding Guidance
+
+- `alpha.3` is the planned point where this repository should be able to start
+  dogfooding RuneContext for new work: repo-local project context,
+  project-specific standards, active changes, and traceability.
+- `alpha.4` is the planned point where this repository should be able to use
+  RuneContext as the primary execution-tracking layer for day-to-day feature
+  progression, because generated indexes, manifests, and promotion assessment
+  complete the basic flow from planned work to durable project knowledge.
+- `docs/implementation-plan/` should still remain the home for release-train,
+  acceptance, and coverage-accounting documents even after repo-local
+  RuneContext dogfooding begins; the goal is not a literal 1:1 migration of
+  every planning document into a RuneContext artifact.
+
 ## Document Index
 
 - `docs/implementation-plan/milestone-breakdown.md`

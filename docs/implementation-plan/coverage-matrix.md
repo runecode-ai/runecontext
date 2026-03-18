@@ -123,6 +123,17 @@ plan so it is clear that the planning documents capture the full design.
   - Planned capture: `alpha.3`, `alpha.7`
 - Decision: every substantive work item gets a minimum change shape first.
   - Planned capture: `alpha.3`
+- Decision: multiple non-closed changes may exist concurrently; RuneContext
+  should not require one repository-wide active-change slot.
+  - Planned capture: `alpha.3`, `alpha.6`
+- Decision: large or high-risk work should usually escalate from minimum mode to
+  full mode early, and tooling should be able to recommend that escalation when
+  a new change is obviously too large, ambiguous, or risky.
+  - Planned capture: `alpha.3`, `alpha.6`
+- Decision: very large features may be modeled as one umbrella change plus
+  linked sub-changes, with `related_changes` preserving navigation and
+  directional `depends_on` links preserving prerequisite ordering.
+  - Planned capture: `alpha.3`, `alpha.6`
 - Decision: `proposal.md` is the canonical reviewable intent artifact.
   - Planned capture: `alpha.1`, `alpha.3`
 - Decision: `standards.md` is always present and tooling-maintained.

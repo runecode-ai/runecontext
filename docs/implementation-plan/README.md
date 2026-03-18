@@ -73,6 +73,14 @@ provenance fields), and `alpha.8` (release/reference-project validation).
 - `alpha.3` is the planned point where this repository should be able to start
   dogfooding RuneContext for new work: repo-local project context,
   project-specific standards, active changes, and traceability.
+- Post-review `alpha.3` semantics for standards explicitly include strict
+  frontmatter validation, path-based standards references in authored change and
+  spec docs, warning-level handling for deprecated direct selections, and
+  advisory-only `suggested_context_bundles` metadata.
+- Final Branch Cut 2 follow-up also clarifies that canonical path references are
+  the only supported authored reference form in `alpha.3`, deprecated standards
+  without successors warn rather than fail, and copied-body enforcement excludes
+  fenced example content.
 - `alpha.4` is the planned point where this repository should be able to use
   RuneContext as the primary execution-tracking layer for day-to-day feature
   progression, because generated indexes, manifests, and promotion assessment

@@ -97,6 +97,19 @@
   work.
 - [ ] Standards migration uses one canonical `replaced_by` path-reference form
   rather than mixed path/id ambiguity.
+- [ ] Deprecated standards may still be referenced directly for compatibility,
+  but validation emits warnings and suggests `replaced_by` targets when present.
+- [ ] Deprecated standards without `replaced_by` remain valid in `alpha.3`, but
+  validation emits a warning so missing migration guidance is reviewable.
+- [ ] Draft or deprecated standards may still appear in `Standards Considered
+  But Excluded`, while draft standards fail closed for applicable selections and
+  bundle membership.
+- [ ] `aliases` are validated as migration metadata and collision-checked even
+  though automatic alias-driven rewrites remain deferred.
+- [ ] Path-based standards references inside `proposal.md` and `specs/*.md`
+  validate both deep-ref and plain backticked `standards/...md` forms.
+- [ ] Copied-standard-content enforcement ignores fenced and quoted-fenced code
+  examples so reviewable excerpts do not trigger false positives.
 - [ ] Cross-artifact references in change metadata validate cleanly or produce
   clear diagnostics.
 - [ ] Machine-readable traceability stays artifact-level, and human-readable

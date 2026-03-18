@@ -78,6 +78,33 @@ plan so it is clear that the planning documents capture the full design.
   - Planned capture: `alpha.2`
 - Decision: linked sources prefer immutable commits or verified signed tags.
   - Planned capture: `alpha.2`, `alpha.8`
+- Decision: signed-tag verification must use explicitly supplied trusted-signer
+  inputs rather than hidden machine-global trust configuration.
+  - Planned capture: `alpha.2`
+- Decision: embedded source paths and git subdirectories must remain contained
+  within the selected project/repository root, while `type: path` may point to
+  developer-local trees outside the repo but must still remain contained within
+  its declared local tree after symlink resolution.
+  - Planned capture: `alpha.2`
+- Decision: git source resolution must reject option-like URL/ref values, avoid
+  hidden host credentials/config, and run with explicit subprocess timeouts.
+  - Planned capture: `alpha.2`
+- Decision: mutable git refs should fail fast on obviously invalid ref syntax
+  before any git subprocess is invoked.
+  - Planned capture: `alpha.2`
+- Decision: RuneContext should not rely on environment variables for
+  user-facing configuration or correctness-critical semantics; only minimal
+  non-semantic process environment plumbing is allowed.
+  - Planned capture: `alpha.2`, `alpha.6`
+- Decision: pinned-commit git resolution must not assume remote support for
+  direct fetch-by-SHA.
+  - Planned capture: `alpha.2`
+- Decision: local path snapshotting should exclude obvious repo-control
+  directories and apply practical file/depth/byte limits.
+  - Planned capture: `alpha.2`, `alpha.4`
+- Decision: validation helpers that materialize temporary source trees must own
+  cleanup on both success and failure paths.
+  - Planned capture: `alpha.2`
 - Decision: project root config carries `runecontext_version` and
   `assurance_tier`.
   - Planned capture: `alpha.1`, `alpha.2`
@@ -108,6 +135,13 @@ plan so it is clear that the planning documents capture the full design.
   - Planned capture: `alpha.4`
 - Decision: users must be able to use embedded or dedicated-repo storage.
   - Planned capture: `alpha.2`, `alpha.8`
+- Decision: bundle rules and generated inventories use consistent
+  RuneContext-root-relative paths, while the aspect key constrains the allowed
+  subtree and mismatches fail closed.
+  - Planned capture: `alpha.2`, `alpha.4`
+- Decision: `type: path` remote/CI invalidity should be controlled by explicit
+  caller mode rather than environment inference.
+  - Planned capture: `alpha.2`
 - Decision: adapters are the primary UX; CLI is the power-user and automation
   surface.
   - Planned capture: `alpha.6`, `alpha.7`

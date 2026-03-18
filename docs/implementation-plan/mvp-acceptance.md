@@ -21,13 +21,56 @@
 - [ ] Embedded mode works.
 - [ ] Linked git mode by pinned commit works.
 - [ ] Linked git mode by signed tag works, including trusted-signer validation,
-  expected-commit checking, and fail-closed mismatch behavior.
+  expected-commit checking, fail-closed mismatch behavior, and explicit trusted-
+  signer inputs rather than hidden machine-global trust state.
 - [ ] Mutable refs require explicit opt-in and warnings.
 - [ ] Local path sources work for developer-local usage and are marked
   unverified/non-auditable.
-- [ ] Monorepo nearest-root discovery works.
+- [ ] Local path sources are invalid for remote/CI mode unless a higher-level
+  trusted wrapper explicitly downgrades the run.
+- [ ] Embedded source paths and git subdirectories fail closed if they are
+  absolute or escape the selected project/repository root.
+- [ ] Embedded source roots are checked after symlink resolution against the
+  selected project root so symlinked escapes fail closed.
+- [ ] Git source resolution validates URL/ref/commit inputs, rejects option-like
+  values, disables interactive prompting, and does not depend on hidden host
+  credentials or global Git config for correctness.
+- [ ] Git source resolution rejects remote-helper URL forms, constrains allowed
+  transport protocols explicitly, and redacts transport secrets from surfaced
+  subprocess errors.
+- [ ] Git source verification surfaces executable/process failures as actionable
+  diagnostics and avoids over-redacting normal git ref/reflog syntax.
+- [ ] Signed-tag verification timeouts and explicit trust-input parse failures
+  also fail closed with structured, machine-readable diagnostics.
+- [ ] Signed-tag verification rejects empty `expect_commit` values with a clear
+  validation error before commit-format checks run.
+- [ ] Mutable git refs reject obviously invalid ref syntax before subprocess
+  execution rather than relying on fetch failures alone.
+- [ ] RuneContext does not use environment variables as user-facing
+  configuration or semantic inputs; correctness-critical behavior comes from
+  repo state, explicit config, or caller-supplied options only.
+- [ ] Git source resolution uses explicit process/network timeouts so local and
+  CI validation cannot hang indefinitely during fetch/checkout steps.
+- [ ] Pinned-commit git resolution works without requiring the remote to support
+  direct fetch-by-SHA behavior.
+- [ ] Monorepo nearest-root discovery works and reports the selected config path
+  as structured metadata.
+- [ ] Local path snapshots exclude `.git/` and fail closed when practical
+  snapshot depth, file-count, or byte-size limits are exceeded.
+- [ ] Bundle traversal fails closed when practical depth or file-count limits are
+  exceeded.
+- [ ] Validation entrypoints clean up any temporary source materializations after
+  successful validation as well as on error.
 - [ ] Bundle resolution is deterministic, cycle-safe, depth-limited, and path-
   boundary-safe.
+- [ ] Bundle rules, diagnostics, and generated inventories use one consistent
+  RuneContext-root-relative path model with aspect-boundary enforcement.
+- [ ] Whole-project validation fails closed when specs, decisions, bundle files,
+  or other validated artifacts escape their selected subtree through symlinks.
+- [ ] Whole-project validation and bundle traversal still accept symlinked root
+  directories when the fully resolved target remains in-bounds.
+- [ ] Bundle aspect-root containment checks canonicalize the aspect root before
+  comparing against resolved bundle matches.
 
 ## 3. Change Workflow And Standards
 
@@ -83,6 +126,9 @@
   wrappers around the same core contracts rather than alternate semantics.
 - [ ] Before alpha.6 is complete, any earlier validation entrypoints use a
   documented and tested machine-readable output contract.
+- [ ] Before alpha.6 is complete, any earlier validation entrypoints that expose
+  signed-tag verification accept explicit trust inputs from the caller and
+  surface structured signed-tag failure reasons/diagnostics.
 - [ ] Early validation entrypoints fail closed with structured diagnostics rather
   than panics when schemas, YAML, markdown contracts, or project references are invalid.
 - [ ] Early validation entrypoints honor declared project content roots and the
@@ -160,6 +206,9 @@ RuneContext makes them possible and testable.
 - [ ] Unit tests cover schema validation, markdown contracts, source
   resolution, bundle semantics, lifecycle invariants, promotion-state handling,
   and assurance behavior.
+- [ ] Unit tests cover git transport hardening, bundle-resolution defensive-copy
+  behavior, and symlink escape rejection for both bundle rules and whole-project
+  artifact validation.
 - [ ] Golden fixtures cover deterministic outputs such as context packs,
   manifests, baselines, receipts, and machine-readable CLI output.
 - [ ] CLI integration tests cover all primary and secondary commands plus

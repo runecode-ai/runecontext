@@ -6,7 +6,7 @@ RuneContext is a portable, markdown-first, git-native system for project knowled
 
 ## Status
 
-RuneContext is pre-alpha and not production-ready. The current repository has the alpha.1 foundation in place: frozen core contracts, versioned schemas, fixtures, Go validation code, and release/dev scaffolding. Broader source resolution, change workflow, deterministic context-pack generation, assurance flows, adapters, and the full CLI surface remain in progress toward `v0.1.0`.
+RuneContext is pre-alpha and not production-ready. The current repository now includes the alpha.1 contract foundation plus the alpha.2 source-resolution and bundle-engine slice: frozen core contracts, versioned schemas, fixtures, Go validation code, embedded/git/path source resolution, monorepo discovery, signed-tag verification with explicit trusted-signer input, and deterministic bundle semantics. Change workflow, context-pack generation, assurance flows, adapters, and the broader CLI surface remain in progress toward `v0.1.0`.
 
 ## Why RuneContext
 
@@ -29,16 +29,17 @@ RuneContext is pre-alpha and not production-ready. The current repository has th
 
 - Normative core contracts in `core/` for terminology, boundaries, layout, and trust rules.
 - Versioned schemas in `schemas/` for `runecontext.yaml`, bundles, change status, context packs, specs, and decisions.
-- Contract fixtures in `fixtures/` for schema validation, markdown structure, and cross-artifact traceability.
-- A Go validation foundation in `internal/contracts/` plus a narrow `runectx validate [path]` command in `cmd/runectx/`.
+- Contract fixtures in `fixtures/` for schema validation, markdown structure, cross-artifact traceability, source resolution, and bundle resolution.
+- A Go validation and resolution foundation in `internal/contracts/` plus a narrow `runectx validate [--ssh-allowed-signers PATH] [path]` command in `cmd/runectx/`.
+- Source resolution for embedded projects, linked git sources by pinned commit, linked git sources by signed tag, opt-in mutable refs, local path sources, and nearest-ancestor monorepo discovery.
+- Deterministic context bundle loading and evaluation with inheritance linearization, cycle/depth rejection, ordered include/exclude precedence, concrete per-rule match inventories, and fail-closed path/symlink containment.
 - Nix, `just`, and GitHub Actions scaffolding for repeatable development, checks, and release work.
 
 Still incremental / not implemented end-to-end yet:
 
-- Embedded, linked, monorepo, and signed-tag source resolution.
-- Full context bundle engine and deterministic context-pack generation.
+- Context-pack generation, hashing, generated indexes, and promotion assessment.
 - Change authoring, shaping, promotion, and assurance workflows.
-- Thin adapter packs and the broader CLI/automation surface planned for later alphas.
+- Thin adapter packs plus the broader CLI and automation surface planned for later alphas.
 
 ## What The MVP Includes
 
@@ -78,27 +79,41 @@ Still incremental / not implemented end-to-end yet:
 - `docs/` - design, planning, installation, and release-process documentation.
 - `nix/` - canonical dev-shell, check, and release-artifact definitions.
 
-## Install / Try It Now
+## Install / Try The CLI
 
-The long-term canonical install path is a reviewable repo bundle from GitHub Releases. The simplest way to try the current pre-alpha is to build `runectx` from source.
+The recommended way to use RuneContext is through the `runectx` CLI. Even in the current pre-alpha, the CLI is the main executable entrypoint for validating RuneContext projects, and later releases are planned to expand it into the primary setup, update, and adapter-management surface.
 
-Quick local install from the current checkout:
+The long-term canonical install path is a reviewable repo bundle from GitHub Releases. Today, the simplest way to get started is to build `runectx` from the current checkout.
+
+Recommended local install from the current checkout:
 
 ```sh
 go build -o runectx ./cmd/runectx
 install -m 0755 runectx "$HOME/.local/bin/runectx"
-runectx validate
+runectx help
 ```
 
-If you want to try the validator without installing it first:
+Use the installed CLI against a RuneContext project:
+
+```sh
+runectx validate /path/to/project
+```
+
+Current CLI scope:
+
+- `runectx validate [--ssh-allowed-signers PATH] [path]`
+- Validates source settings, bundle semantics, markdown contracts, spec/decision metadata, and cross-artifact traceability.
+- Supports embedded, git, path, and monorepo project layouts.
+- Supports signed-tag verification when you provide explicit trusted signer material with `--ssh-allowed-signers`.
+- Emits stable line-oriented `key=value` output for automation before broader `--json` support lands.
+
+If you want to try the CLI without installing it first:
 
 ```sh
 go run ./cmd/runectx validate
 ```
 
-Current alpha.1 note:
-
-- `runectx validate` emits stable line-oriented `key=value` output for automation before broader `--json` support lands.
+If you prefer to inspect or vendor release contents directly, the long-term canonical distribution remains a reviewable repo bundle from GitHub Releases; the CLI binary is a convenience entrypoint on top of that release model.
 
 Common local commands:
 

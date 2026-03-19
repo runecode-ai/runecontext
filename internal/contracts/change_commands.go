@@ -797,6 +797,9 @@ func rewriteMarkdownChangePathMentions(data []byte, oldRoot, newRoot string) ([]
 		out.WriteString(rewritten)
 		total += count
 	}
+	if total == 0 {
+		return append([]byte(nil), data...), 0, nil
+	}
 	return []byte(out.String()), total, nil
 }
 

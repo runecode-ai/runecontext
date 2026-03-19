@@ -17,7 +17,7 @@ This directory now contains the initial Go CLI entrypoint.
   - closes or supersedes a change without moving it off its stable path
   - fails closed if a missing reciprocal `supersedes` link would require mutating
     an already-terminal successor change
-- `runectx change reallocate CHANGE_ID ...`
+- `runectx change reallocate CHANGE_ID [--path PATH]`
   - reallocates a rare colliding change ID before merge
   - rejects terminal changes, stages the rewrite outside the live `changes/`
     tree, and fails closed when external artifacts reference the old ID

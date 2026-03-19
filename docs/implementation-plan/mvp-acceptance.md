@@ -150,8 +150,9 @@
 - [x] Closed changes remain directly accessible at stable paths.
 - [x] Rare change-ID reallocation stays fail-closed in alpha.3: terminal or
   externally referenced changes are rejected, only local change-path references
-  inside the change are rewritten, and backup cleanup degrades to an explicit
-  warning instead of a misleading hard failure after success.
+  inside the change are rewritten, unchanged markdown preserves its original
+  bytes, and backup cleanup degrades to an explicit warning instead of a
+  misleading hard failure after success.
 
 ## 4. Context Packs, Promotion, And Indexes
 

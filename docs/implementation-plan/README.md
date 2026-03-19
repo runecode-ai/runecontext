@@ -94,8 +94,9 @@ provenance fields), and `alpha.8` (release/reference-project validation).
   terminal changes instead of mutating history, and supersession repair fails
   closed if a reciprocal link would require mutating a terminal successor.
 - The final Branch Cut 4 hardening pass extends that same fail-closed posture to
-  `change reallocate`: terminal changes cannot be rewritten, reallocation only
-  rewrites local change-path references inside the change, staging happens
+  `runectx change reallocate CHANGE_ID [--path PATH]`: terminal changes cannot
+  be rewritten, reallocation only rewrites local change-path references inside
+  the change, unchanged markdown keeps its original bytes, staging happens
   outside the live `changes/` tree, and leftover backup-cleanup problems surface
   as warnings instead of ambiguous post-success failures.
 - The same hardening pass also requires optional change-status string fields to

@@ -889,6 +889,20 @@ func TestRewriteStatusChangeIDRefsUpdatesLocalLists(t *testing.T) {
 	}
 }
 
+func TestRewriteMarkdownChangePathMentionsPreservesCRLFWhenUnchanged(t *testing.T) {
+	input := []byte("## Summary\r\nNo change-path references here.\r\n")
+	rewritten, count, err := rewriteMarkdownChangePathMentions(input, "changes/CHG-2026-001-a3f2-auth-gateway", "changes/CHG-2026-002-b4c3-auth-gateway")
+	if err != nil {
+		t.Fatalf("rewrite markdown change paths: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected no rewritten references, got %d", count)
+	}
+	if !bytes.Equal(rewritten, input) {
+		t.Fatalf("expected unchanged bytes to preserve original line endings\nwant: %q\ngot:  %q", string(input), string(rewritten))
+	}
+}
+
 func TestStatusDocumentFromMapRejectsInvalidPromotionAssessmentStatus(t *testing.T) {
 	_, err := statusDocumentFromMap(map[string]any{
 		"schema_version":      1,

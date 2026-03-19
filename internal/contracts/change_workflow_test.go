@@ -111,6 +111,75 @@ func TestCloseChangeStatusRejectsInvalidSupersededBy(t *testing.T) {
 	}
 }
 
+func TestCloneTopLevelValueClonesTypedCollections(t *testing.T) {
+	original := map[string]any{
+		"context_bundles": []string{"base", "security"},
+		"metadata":        map[string]string{"owner": "platform"},
+		"matrix":          [2]string{"a", "b"},
+	}
+	cloned := cloneMap(original)
+	clonedBundles, ok := cloned["context_bundles"].([]string)
+	if !ok {
+		t.Fatalf("expected []string clone, got %#v", cloned["context_bundles"])
+	}
+	clonedBundles[0] = "mutated"
+	cloned["context_bundles"] = clonedBundles
+	clonedMetadata, ok := cloned["metadata"].(map[string]string)
+	if !ok {
+		t.Fatalf("expected map[string]string clone, got %#v", cloned["metadata"])
+	}
+	clonedMetadata["owner"] = "security"
+	cloned["metadata"] = clonedMetadata
+	clonedMatrix, ok := cloned["matrix"].([2]string)
+	if !ok {
+		t.Fatalf("expected [2]string clone, got %#v", cloned["matrix"])
+	}
+	clonedMatrix[0] = "z"
+	cloned["matrix"] = clonedMatrix
+	originalBundles := original["context_bundles"].([]string)
+	if !reflect.DeepEqual(originalBundles, []string{"base", "security"}) {
+		t.Fatalf("expected original bundles to remain unchanged, got %#v", originalBundles)
+	}
+	originalMetadata := original["metadata"].(map[string]string)
+	if !reflect.DeepEqual(originalMetadata, map[string]string{"owner": "platform"}) {
+		t.Fatalf("expected original metadata to remain unchanged, got %#v", originalMetadata)
+	}
+	originalMatrix := original["matrix"].([2]string)
+	if !reflect.DeepEqual(originalMatrix, [2]string{"a", "b"}) {
+		t.Fatalf("expected original array to remain unchanged, got %#v", originalMatrix)
+	}
+}
+
+func TestBuildChangeRecordUsesEmptyStringForMissingOptionalFields(t *testing.T) {
+	changeDir := filepath.Join(t.TempDir(), "CHG-2026-001-a3f2-auth-gateway")
+	statusPath := filepath.Join(changeDir, "status.yaml")
+	record, err := buildChangeRecord(changeDir, statusPath, map[string]any{
+		"id":                  "CHG-2026-001-a3f2-auth-gateway",
+		"title":               "Add auth gateway",
+		"status":              "proposed",
+		"type":                "feature",
+		"verification_status": "pending",
+		"context_bundles":     []any{"base"},
+		"related_specs":       []any{},
+		"related_decisions":   []any{},
+		"related_changes":     []any{},
+		"depends_on":          []any{},
+		"informed_by":         []any{},
+		"supersedes":          []any{},
+		"superseded_by":       []any{},
+		"closed_at":           nil,
+	})
+	if err != nil {
+		t.Fatalf("build change record: %v", err)
+	}
+	if got := record.Size; got != "" {
+		t.Fatalf("expected missing size to remain empty, got %q", got)
+	}
+	if got := record.Title; got != "Add auth gateway" {
+		t.Fatalf("expected title to be preserved, got %q", got)
+	}
+}
+
 func TestValidateLifecycleTransition(t *testing.T) {
 	if err := ValidateLifecycleTransition("planned", "verified"); err != nil {
 		t.Fatalf("expected forward transition to succeed: %v", err)

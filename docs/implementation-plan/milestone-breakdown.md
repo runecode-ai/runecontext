@@ -513,9 +513,19 @@ Post-review clarifications:
 
 ### Recommended Branch Cut 4: Rewrite-heavy edge cases and late alpha.3 polish
 
-- [ ] Issue: implement merge-time change-ID collision detection, reallocation,
+- [x] Issue: implement merge-time change-ID collision detection, reallocation,
   and atomic local-reference rewriting for the rare case where branches still
   collide.
+  - Post-review hardening: reject terminal or externally referenced changes,
+    stage outside the live `changes/` tree, reject symlinked change artifacts,
+    keep reallocation rewrites scoped to local change-path references, preserve
+    unchanged markdown bytes, preserve original line endings on successful
+    rewrites, keep rewrite token boundaries UTF-8-safe, make close/create
+    failure paths roll back or clean up instead of leaving partial state behind,
+    preserve file permissions across transactional rewrites, reject symlinked
+    reallocate rename roots before directory swaps, use a Windows-safe fallback
+    when atomic file replacement targets already exist, and surface
+    backup-cleanup as a warning rather than an ambiguous command failure.
 
 ### Cross-Cutting Workflow Tests and Fixtures
 

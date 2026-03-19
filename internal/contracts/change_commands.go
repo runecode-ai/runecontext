@@ -2,14 +2,18 @@ package contracts
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"gopkg.in/yaml.v3"
 )
@@ -49,6 +53,10 @@ type ChangeCloseOptions struct {
 	SupersededBy       []string
 }
 
+type ChangeReallocateOptions struct {
+	Entropy io.Reader
+}
+
 type FileMutation struct {
 	Path   string
 	Action string
@@ -69,6 +77,16 @@ type ChangeOperationResult struct {
 	ReviewDiffRequired     bool
 	Reasons                []string
 	Assumptions            []string
+}
+
+type ChangeReallocationResult struct {
+	OldID                   string
+	ID                      string
+	OldChangePath           string
+	ChangePath              string
+	RewrittenReferenceCount int
+	ChangedFiles            []FileMutation
+	Warnings                []string
 }
 
 type ProjectStatusSummary struct {
@@ -148,7 +166,24 @@ var allowedPromotionAssessmentStatuses = map[string]struct{}{
 	"completed": {},
 }
 
-func CreateChange(v *Validator, loaded *LoadedProject, options ChangeCreateOptions) (*ChangeOperationResult, error) {
+var (
+	renamePath                         = os.Rename
+	removeAllPath                      = os.RemoveAll
+	mkdirTempDir                       = os.MkdirTemp
+	createTempFilePath                 = os.CreateTemp
+	writeFilePath                      = os.WriteFile
+	chmodPath                          = os.Chmod
+	lstatPath                          = os.Lstat
+	atomicReplaceNeedsFallback         = runtime.GOOS == "windows"
+	validateProjectAfterChangeMutation = func(v *Validator, projectRoot string) (*ProjectIndex, error) {
+		return v.ValidateProjectWithOptions(projectRoot, ResolveOptions{
+			ConfigDiscovery: ConfigDiscoveryExplicitRoot,
+			ExecutionMode:   ExecutionModeLocal,
+		})
+	}
+)
+
+func CreateChange(v *Validator, loaded *LoadedProject, options ChangeCreateOptions) (result *ChangeOperationResult, err error) {
 	if v == nil {
 		return nil, fmt.Errorf("validator is required")
 	}
@@ -195,6 +230,9 @@ func CreateChange(v *Validator, loaded *LoadedProject, options ChangeCreateOptio
 		now = time.Now().UTC()
 	}
 	changesRoot := filepath.Join(writableRoot, "changes")
+	if err := ensurePathAndParentAreNotSymlinks(changesRoot); err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(changesRoot, 0o755); err != nil {
 		return nil, err
 	}
@@ -202,6 +240,23 @@ func CreateChange(v *Validator, loaded *LoadedProject, options ChangeCreateOptio
 	if err != nil {
 		return nil, err
 	}
+	if err := ensurePathAndParentAreNotSymlinks(changeDir); err != nil {
+		_ = removeAllPath(changeDir)
+		return nil, err
+	}
+	cleanupChangeDir := true
+	defer func() {
+		if !cleanupChangeDir {
+			return
+		}
+		if cleanupErr := removeAllPath(changeDir); cleanupErr != nil {
+			if err == nil {
+				err = cleanupErr
+				return
+			}
+			err = fmt.Errorf("%v; cleanup also failed and manual removal may be required: %v", err, cleanupErr)
+		}
+	}()
 	verificationCommands, verificationAssumption := inferVerificationCommands(loaded.Resolution.ProjectRoot)
 	assessment.VerificationCmds = verificationCommands
 	assumptions := uniqueStringsInOrder(append(append(append([]string{}, assessment.Assumptions...), contextAssumptions...), standardAssumptions...))
@@ -236,7 +291,7 @@ func CreateChange(v *Validator, loaded *LoadedProject, options ChangeCreateOptio
 		{path: proposalPath, data: proposalData},
 		{path: standardsPath, data: standardsData},
 	} {
-		if err := os.WriteFile(file.path, file.data, 0o644); err != nil {
+		if err := writeFileAtomically(file.path, file.data, 0o644); err != nil {
 			return nil, err
 		}
 		changedFiles = append(changedFiles, FileMutation{Path: runeContextRelativePath(writableRoot, file.path), Action: "created"})
@@ -254,15 +309,13 @@ func CreateChange(v *Validator, loaded *LoadedProject, options ChangeCreateOptio
 		changedFiles = append(changedFiles, shapeResult...)
 	}
 	sortFileMutations(changedFiles)
-	validated, err := v.ValidateProjectWithOptions(loaded.Resolution.ProjectRoot, ResolveOptions{
-		ConfigDiscovery: ConfigDiscoveryExplicitRoot,
-		ExecutionMode:   ExecutionModeLocal,
-	})
+	validated, err := validateProjectAfterChangeMutation(v, loaded.Resolution.ProjectRoot)
 	if err != nil {
 		return nil, err
 	}
 	_ = validated.Close()
-	result := &ChangeOperationResult{
+	cleanupChangeDir = false
+	result = &ChangeOperationResult{
 		ID:                     id,
 		ChangePath:             runeContextRelativePath(writableRoot, changeDir),
 		Mode:                   selectedMode,
@@ -409,10 +462,16 @@ func CloseChange(v *Validator, loaded *LoadedProject, changeID string, options C
 	if err != nil {
 		return nil, err
 	}
-	changedFiles := make([]FileMutation, 0, 1+len(options.SupersededBy))
-	if err := writeStatusMap(record.StatusPath, updated); err != nil {
+	statusWrites := make([]fileRewrite, 0, 1+len(options.SupersededBy))
+	if err := ensurePathAndParentAreNotSymlinks(record.StatusPath); err != nil {
 		return nil, err
 	}
+	mainStatusData, err := prepareStatusRewrite(v, record.StatusPath, updated)
+	if err != nil {
+		return nil, err
+	}
+	statusWrites = append(statusWrites, fileRewrite{Path: record.StatusPath, Data: mainStatusData})
+	changedFiles := make([]FileMutation, 0, 1+len(options.SupersededBy))
 	changedFiles = append(changedFiles, FileMutation{Path: runeContextRelativePath(writableRoot, record.StatusPath), Action: "updated"})
 	for _, successorID := range options.SupersededBy {
 		successor := index.Changes[successorID]
@@ -422,23 +481,30 @@ func CloseChange(v *Validator, loaded *LoadedProject, changeID string, options C
 			if isTerminalLifecycleStatus(successor.Status) {
 				return nil, fmt.Errorf("successor change %q is already in terminal status %q and cannot be updated with a reciprocal supersedes link", successorID, successor.Status)
 			}
-			supersedes = append(supersedes, changeID)
-			successorStatus["supersedes"] = stringSliceToAny(uniqueSortedStrings(supersedes))
-			if err := writeStatusMap(successor.StatusPath, successorStatus); err != nil {
+			if err := ensurePathAndParentAreNotSymlinks(successor.StatusPath); err != nil {
 				return nil, err
 			}
+			supersedes = append(supersedes, changeID)
+			successorStatus["supersedes"] = stringSliceToAny(uniqueSortedStrings(supersedes))
+			successorStatusData, err := prepareStatusRewrite(v, successor.StatusPath, successorStatus)
+			if err != nil {
+				return nil, err
+			}
+			statusWrites = append(statusWrites, fileRewrite{Path: successor.StatusPath, Data: successorStatusData})
 			changedFiles = append(changedFiles, FileMutation{Path: runeContextRelativePath(writableRoot, successor.StatusPath), Action: "updated"})
 		}
 	}
-	sortFileMutations(changedFiles)
-	validated, err := v.ValidateProjectWithOptions(loaded.Resolution.ProjectRoot, ResolveOptions{
-		ConfigDiscovery: ConfigDiscoveryExplicitRoot,
-		ExecutionMode:   ExecutionModeLocal,
-	})
-	if err != nil {
+	if err := applyFileRewritesTransaction(statusWrites, func() error {
+		validated, err := validateProjectAfterChangeMutation(v, loaded.Resolution.ProjectRoot)
+		if err != nil {
+			return err
+		}
+		_ = validated.Close()
+		return nil
+	}); err != nil {
 		return nil, err
 	}
-	_ = validated.Close()
+	sortFileMutations(changedFiles)
 	closedAt, _ := updated["closed_at"].(string)
 	status := fmt.Sprint(updated["status"])
 	return &ChangeOperationResult{
@@ -452,6 +518,296 @@ func CloseChange(v *Validator, loaded *LoadedProject, changeID string, options C
 		ApplicableStandards: append([]string(nil), record.ApplicableStandards...),
 		ChangedFiles:        changedFiles,
 		ReviewDiffRequired:  false,
+	}, nil
+}
+
+type fileRewrite struct {
+	Path string
+	Data []byte
+}
+
+type fileBackup struct {
+	Path string
+	Data []byte
+	Perm fs.FileMode
+}
+
+func prepareStatusRewrite(v *Validator, path string, raw map[string]any) ([]byte, error) {
+	if v == nil {
+		return nil, fmt.Errorf("validator is required")
+	}
+	data, err := renderStatusYAML(raw)
+	if err != nil {
+		return nil, err
+	}
+	if err := v.ValidateYAMLFile("change-status.schema.json", path, data); err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func applyFileRewritesTransaction(rewrites []fileRewrite, postWriteValidate func() error) error {
+	if len(rewrites) == 0 {
+		if postWriteValidate == nil {
+			return nil
+		}
+		return postWriteValidate()
+	}
+	backups := make([]fileBackup, 0, len(rewrites))
+	for _, rewrite := range rewrites {
+		if err := ensurePathAndParentAreNotSymlinks(rewrite.Path); err != nil {
+			return err
+		}
+		info, err := os.Stat(rewrite.Path)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(rewrite.Path)
+		if err != nil {
+			return err
+		}
+		backups = append(backups, fileBackup{Path: rewrite.Path, Data: data, Perm: info.Mode().Perm()})
+	}
+	written := 0
+	for _, rewrite := range rewrites {
+		if err := writeFileAtomically(rewrite.Path, rewrite.Data, backups[written].Perm); err != nil {
+			rollbackErr := restoreFileBackups(backups[:written])
+			return combineFileRewriteRollbackError(err, rollbackErr)
+		}
+		written++
+	}
+	if postWriteValidate == nil {
+		return nil
+	}
+	if err := postWriteValidate(); err != nil {
+		rollbackErr := restoreFileBackups(backups)
+		return combineFileRewriteRollbackError(err, rollbackErr)
+	}
+	return nil
+}
+
+func restoreFileBackups(backups []fileBackup) error {
+	errMessages := make([]string, 0)
+	for i := len(backups) - 1; i >= 0; i-- {
+		backup := backups[i]
+		if err := writeFileAtomically(backup.Path, backup.Data, backup.Perm); err != nil {
+			errMessages = append(errMessages, fmt.Sprintf("restore %q: %v", filepath.ToSlash(backup.Path), err))
+		}
+	}
+	if len(errMessages) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(errMessages, "; "))
+}
+
+func combineFileRewriteRollbackError(operationErr, rollbackErr error) error {
+	if rollbackErr == nil {
+		return operationErr
+	}
+	return fmt.Errorf("%v; rollback also failed and manual recovery may be required: %v", operationErr, rollbackErr)
+}
+
+func ensurePathAndParentAreNotSymlinks(path string) error {
+	cleanPath := filepath.Clean(path)
+	for _, candidate := range []string{filepath.Dir(cleanPath), cleanPath} {
+		info, err := lstatPath(candidate)
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("mutation does not support symlinked targets: %s", filepath.ToSlash(candidate))
+		}
+	}
+	return nil
+}
+
+func writeFileAtomically(path string, data []byte, perm fs.FileMode) error {
+	if err := ensurePathAndParentAreNotSymlinks(path); err != nil {
+		return err
+	}
+	tempFile, err := createTempFilePath(filepath.Dir(path), ".mutation-*")
+	if err != nil {
+		return err
+	}
+	tempPath := tempFile.Name()
+	if err := tempFile.Close(); err != nil {
+		_ = removeAllPath(tempPath)
+		return err
+	}
+	cleanup := true
+	defer func() {
+		if cleanup {
+			_ = removeAllPath(tempPath)
+		}
+	}()
+	if err := writeFilePath(tempPath, data, perm); err != nil {
+		return err
+	}
+	if err := chmodPath(tempPath, perm); err != nil {
+		return err
+	}
+	if err := replacePathAtomically(tempPath, path); err != nil {
+		return err
+	}
+	cleanup = false
+	return nil
+}
+
+func replacePathAtomically(tempPath, targetPath string) error {
+	err := renamePath(tempPath, targetPath)
+	if err == nil {
+		return nil
+	}
+	if !atomicReplaceNeedsFallback {
+		return err
+	}
+	if fallbackErr := ensurePathAndParentAreNotSymlinks(targetPath); fallbackErr != nil {
+		return fallbackErr
+	}
+	if _, statErr := os.Stat(targetPath); statErr != nil {
+		return err
+	}
+	backupFile, backupErr := createTempFilePath(filepath.Dir(targetPath), ".replace-backup-*")
+	if backupErr != nil {
+		return err
+	}
+	backupPath := backupFile.Name()
+	if closeErr := backupFile.Close(); closeErr != nil {
+		_ = removeAllPath(backupPath)
+		return closeErr
+	}
+	if removeErr := removeAllPath(backupPath); removeErr != nil {
+		return removeErr
+	}
+	cleanupBackup := true
+	defer func() {
+		if cleanupBackup {
+			_ = removeAllPath(backupPath)
+		}
+	}()
+	if renameBackupErr := renamePath(targetPath, backupPath); renameBackupErr != nil {
+		return err
+	}
+	if renameTempErr := renamePath(tempPath, targetPath); renameTempErr != nil {
+		rollbackErr := renamePath(backupPath, targetPath)
+		return combineFileRewriteRollbackError(renameTempErr, rollbackErr)
+	}
+	cleanupBackup = false
+	_ = removeAllPath(backupPath)
+	return nil
+}
+
+func ReallocateChange(v *Validator, loaded *LoadedProject, changeID string, options ChangeReallocateOptions) (*ChangeReallocationResult, error) {
+	if v == nil {
+		return nil, fmt.Errorf("validator is required")
+	}
+	if loaded == nil {
+		return nil, fmt.Errorf("loaded project is required")
+	}
+	if err := requireWritableChangeSource(loaded); err != nil {
+		return nil, err
+	}
+	index, err := v.ValidateLoadedProject(loaded)
+	if err != nil {
+		return nil, err
+	}
+	defer index.Close()
+	record := index.Changes[changeID]
+	if record == nil {
+		return nil, fmt.Errorf("change %q does not exist", changeID)
+	}
+	if isTerminalLifecycleStatus(record.Status) {
+		return nil, fmt.Errorf("change %q is already in terminal status %q and cannot be reallocated", changeID, record.Status)
+	}
+	if err := ensureChangeReallocationIsLocalOnly(index, changeID); err != nil {
+		return nil, err
+	}
+	writableRoot, err := writableContentRoot(loaded)
+	if err != nil {
+		return nil, err
+	}
+	originalYear, _, _, _, err := parseChangeID(changeID)
+	if err != nil {
+		return nil, err
+	}
+	allocationTime := time.Date(originalYear, time.January, 1, 0, 0, 0, 0, time.UTC)
+	newID, err := AllocateChangeID(writableRoot, allocationTime, record.Title, options.Entropy)
+	if err != nil {
+		return nil, err
+	}
+	changesRoot := filepath.Join(writableRoot, "changes")
+	oldChangeDir := filepath.Join(changesRoot, changeID)
+	newChangeDir := filepath.Join(changesRoot, newID)
+	backupDir := filepath.Join(writableRoot, ".reallocate-"+changeID+"-backup")
+	for _, path := range []string{changesRoot, oldChangeDir, newChangeDir, backupDir} {
+		if err := ensurePathAndParentAreNotSymlinks(path); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := os.Stat(newChangeDir); err == nil {
+		return nil, fmt.Errorf("reallocated change path %q already exists", runeContextRelativePath(writableRoot, newChangeDir))
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+	if _, err := os.Lstat(backupDir); err == nil {
+		return nil, fmt.Errorf("cannot reallocate change %q because backup path %q already exists; inspect or remove the leftover backup before retrying", changeID, runeContextRelativePath(writableRoot, backupDir))
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+	stagedDir, err := mkdirTempDir(writableRoot, ".reallocate-"+newID+"-stage-")
+	if err != nil {
+		return nil, err
+	}
+	if err := ensurePathAndParentAreNotSymlinks(stagedDir); err != nil {
+		_ = removeAllPath(stagedDir)
+		return nil, err
+	}
+	changedFiles, rewrittenRefs, err := stageReallocatedChange(oldChangeDir, stagedDir, changeID, newID)
+	if err != nil {
+		_ = removeAllPath(stagedDir)
+		return nil, err
+	}
+	cleanupStaged := true
+	defer func() {
+		if cleanupStaged {
+			_ = removeAllPath(stagedDir)
+		}
+	}()
+	for _, path := range []string{changesRoot, oldChangeDir, backupDir, stagedDir, newChangeDir} {
+		if err := ensurePathAndParentAreNotSymlinks(path); err != nil {
+			return nil, err
+		}
+	}
+	if err := renamePath(oldChangeDir, backupDir); err != nil {
+		return nil, err
+	}
+	if err := renamePath(stagedDir, newChangeDir); err != nil {
+		rollbackErr := restoreOriginalChangeFromBackup(backupDir, oldChangeDir)
+		return nil, combineReallocationRollbackError(err, rollbackErr)
+	}
+	cleanupStaged = false
+	validated, err := validateProjectAfterChangeMutation(v, loaded.Resolution.ProjectRoot)
+	if err != nil {
+		rollbackErr := rollbackCommittedReallocatedChange(newChangeDir, backupDir, oldChangeDir)
+		return nil, combineReallocationRollbackError(err, rollbackErr)
+	}
+	_ = validated.Close()
+	warnings := make([]string, 0, 1)
+	if err := removeAllPath(backupDir); err != nil {
+		warnings = append(warnings, fmt.Sprintf("reallocation succeeded but could not remove backup path %q: %v", runeContextRelativePath(writableRoot, backupDir), err))
+	}
+	sortFileMutations(changedFiles)
+	return &ChangeReallocationResult{
+		OldID:                   changeID,
+		ID:                      newID,
+		OldChangePath:           runeContextRelativePath(writableRoot, oldChangeDir),
+		ChangePath:              runeContextRelativePath(writableRoot, newChangeDir),
+		RewrittenReferenceCount: rewrittenRefs,
+		ChangedFiles:            changedFiles,
+		Warnings:                warnings,
 	}, nil
 }
 
@@ -499,6 +855,276 @@ func BuildProjectStatusSummary(v *Validator, loaded *LoadedProject) (*ProjectSta
 		summary.BundleIDs = SortedKeys(index.Bundles.bundles)
 	}
 	return summary, nil
+}
+
+func ensureChangeReallocationIsLocalOnly(index *ProjectIndex, changeID string) error {
+	if index == nil {
+		return fmt.Errorf("project index is required")
+	}
+	for _, otherID := range SortedKeys(index.Changes) {
+		if otherID == changeID {
+			continue
+		}
+		record := index.Changes[otherID]
+		for _, field := range []struct {
+			name  string
+			items []string
+		}{
+			{name: "related_changes", items: record.RelatedChanges},
+			{name: "depends_on", items: record.DependsOn},
+			{name: "informed_by", items: record.InformedBy},
+			{name: "supersedes", items: record.Supersedes},
+			{name: "superseded_by", items: record.SupersededBy},
+		} {
+			if containsString(field.items, changeID) {
+				return fmt.Errorf("change %q cannot be reallocated because %s in %q references it; alpha.3 reallocation only rewrites local references inside the change", changeID, field.name, runeContextRelativePath(index.ContentRoot, record.StatusPath))
+			}
+		}
+	}
+	for _, specPath := range SortedKeys(index.Specs) {
+		spec := index.Specs[specPath]
+		if containsString(spec.OriginatingChanges, changeID) || containsString(spec.RevisedByChanges, changeID) {
+			return fmt.Errorf("change %q cannot be reallocated because spec %q references it; alpha.3 reallocation only rewrites local references inside the change", changeID, specPath)
+		}
+	}
+	for _, decisionPath := range SortedKeys(index.Decisions) {
+		decision := index.Decisions[decisionPath]
+		if containsString(decision.OriginatingChanges, changeID) || containsString(decision.RelatedChanges, changeID) {
+			return fmt.Errorf("change %q cannot be reallocated because decision %q references it; alpha.3 reallocation only rewrites local references inside the change", changeID, decisionPath)
+		}
+	}
+	changePrefix := changeMarkdownPathPrefix(changeID)
+	for _, path := range SortedKeys(index.MarkdownFiles) {
+		if strings.HasPrefix(path, changePrefix) {
+			continue
+		}
+		artifact := index.MarkdownFiles[path]
+		for _, ref := range artifact.Refs {
+			if strings.HasPrefix(ref.Path, changePrefix) {
+				return fmt.Errorf("change %q cannot be reallocated because markdown deep ref %q in %q points into it; alpha.3 reallocation only rewrites local references inside the change", changeID, ref.Raw, path)
+			}
+		}
+	}
+	return nil
+}
+
+func stageReallocatedChange(oldChangeDir, stagedDir, oldID, newID string) ([]FileMutation, int, error) {
+	info, err := os.Stat(oldChangeDir)
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := ensureNoSymlinksInTree(oldChangeDir, filepath.ToSlash(filepath.Join("changes", oldID))); err != nil {
+		return nil, 0, err
+	}
+	oldRoot := filepath.ToSlash(filepath.Join("changes", oldID))
+	newRoot := filepath.ToSlash(filepath.Join("changes", newID))
+	totalRewritten := 0
+	changedFiles := make([]FileMutation, 0)
+	err = filepath.WalkDir(oldChangeDir, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(oldChangeDir, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		targetPath := filepath.Join(stagedDir, rel)
+		if info.IsDir() {
+			if err := os.MkdirAll(targetPath, info.Mode().Perm()); err != nil {
+				return err
+			}
+			return chmodPath(targetPath, info.Mode().Perm())
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		action := "moved"
+		switch {
+		case rel == "status.yaml":
+			parsed, err := parseYAML(data)
+			if err != nil {
+				return err
+			}
+			statusMap, err := expectObject(path, parsed, "status file")
+			if err != nil {
+				return err
+			}
+			statusMap = cloneMap(statusMap)
+			statusMap["id"] = newID
+			data, err = renderStatusYAML(statusMap)
+			if err != nil {
+				return err
+			}
+			action = "updated"
+		case filepath.Ext(rel) == ".md":
+			rewritten, count, err := rewriteMarkdownChangePathMentions(data, oldRoot, newRoot)
+			if err != nil {
+				return err
+			}
+			data = rewritten
+			totalRewritten += count
+			if count > 0 {
+				action = "updated"
+			}
+		}
+		if err := os.WriteFile(targetPath, data, info.Mode().Perm()); err != nil {
+			return err
+		}
+		if err := chmodPath(targetPath, info.Mode().Perm()); err != nil {
+			return err
+		}
+		changedFiles = append(changedFiles, FileMutation{Path: filepath.ToSlash(filepath.Join("changes", newID, rel)), Action: action})
+		return nil
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	if err := chmodPath(stagedDir, info.Mode().Perm()); err != nil {
+		return nil, 0, err
+	}
+	return changedFiles, totalRewritten, nil
+}
+
+func changeMarkdownPathPrefix(changeID string) string {
+	return filepath.ToSlash(filepath.Join("changes", changeID)) + "/"
+}
+
+func ensureNoSymlinksInTree(rootPath, relativeRoot string) error {
+	return filepath.WalkDir(rootPath, func(path string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if path == rootPath {
+			return nil
+		}
+		if entry.Type()&os.ModeSymlink == 0 {
+			return nil
+		}
+		rel, err := filepath.Rel(rootPath, path)
+		if err != nil {
+			return err
+		}
+		return fmt.Errorf("reallocation does not support symlinks in change directories: %s", filepath.ToSlash(filepath.Join(relativeRoot, rel)))
+	})
+}
+
+func rewriteMarkdownChangePathMentions(data []byte, oldRoot, newRoot string) ([]byte, int, error) {
+	newline := detectPreferredNewline(data)
+	text := strings.ReplaceAll(string(data), "\r\n", "\n")
+	segments := markdownTextSegments(text)
+	var out strings.Builder
+	total := 0
+	for _, segment := range segments {
+		if segment.fenced {
+			out.WriteString(segment.text)
+			continue
+		}
+		rewritten, count := rewriteLiteralPathRootInText(segment.text, oldRoot, newRoot)
+		out.WriteString(rewritten)
+		total += count
+	}
+	if total == 0 {
+		return append([]byte(nil), data...), 0, nil
+	}
+	result := out.String()
+	if newline == "\r\n" {
+		result = strings.ReplaceAll(result, "\n", "\r\n")
+	}
+	return []byte(result), total, nil
+}
+
+func rewriteLiteralPathRootInText(text, oldRoot, newRoot string) (string, int) {
+	if oldRoot == "" || oldRoot == newRoot {
+		return text, 0
+	}
+	var out strings.Builder
+	i := 0
+	count := 0
+	for i < len(text) {
+		idx := strings.Index(text[i:], oldRoot)
+		if idx < 0 {
+			out.WriteString(text[i:])
+			break
+		}
+		idx += i
+		prevOK := idx == 0 || !isMarkdownPathChar(previousRune(text, idx))
+		nextPos := idx + len(oldRoot)
+		nextOK := nextPos == len(text) || text[nextPos] == '/' || !isMarkdownPathChar(nextRune(text, nextPos))
+		if !prevOK || !nextOK {
+			out.WriteString(text[i:nextPos])
+			i = nextPos
+			continue
+		}
+		out.WriteString(text[i:idx])
+		out.WriteString(newRoot)
+		count++
+		i = nextPos
+	}
+	return out.String(), count
+}
+
+func previousRune(text string, index int) rune {
+	if index <= 0 || index > len(text) {
+		return utf8.RuneError
+	}
+	r, _ := utf8.DecodeLastRuneInString(text[:index])
+	return r
+}
+
+func nextRune(text string, index int) rune {
+	if index < 0 || index >= len(text) {
+		return utf8.RuneError
+	}
+	r, _ := utf8.DecodeRuneInString(text[index:])
+	return r
+}
+
+func detectPreferredNewline(data []byte) string {
+	text := string(data)
+	if strings.Contains(text, "\r\n") && !strings.Contains(strings.ReplaceAll(text, "\r\n", ""), "\n") {
+		return "\r\n"
+	}
+	return "\n"
+}
+
+func rollbackCommittedReallocatedChange(newChangeDir, backupDir, oldChangeDir string) error {
+	errMessages := make([]string, 0, 2)
+	if err := removeAllPath(newChangeDir); err != nil && !os.IsNotExist(err) {
+		errMessages = append(errMessages, fmt.Sprintf("remove reallocated change %q: %v", filepath.ToSlash(newChangeDir), err))
+	}
+	if err := restoreOriginalChangeFromBackup(backupDir, oldChangeDir); err != nil {
+		errMessages = append(errMessages, err.Error())
+	}
+	if len(errMessages) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(errMessages, "; "))
+}
+
+func restoreOriginalChangeFromBackup(backupDir, oldChangeDir string) error {
+	errMessages := make([]string, 0, 1)
+	if err := renamePath(backupDir, oldChangeDir); err != nil {
+		errMessages = append(errMessages, fmt.Sprintf("restore original change %q from backup %q: %v", filepath.ToSlash(oldChangeDir), filepath.ToSlash(backupDir), err))
+	}
+	if len(errMessages) == 0 {
+		return nil
+	}
+	return errors.New(strings.Join(errMessages, "; "))
+}
+
+func combineReallocationRollbackError(operationErr, rollbackErr error) error {
+	if rollbackErr == nil {
+		return operationErr
+	}
+	return fmt.Errorf("%v; rollback also failed and manual recovery may be required: %v", operationErr, rollbackErr)
 }
 
 func requireWritableChangeSource(loaded *LoadedProject) error {
@@ -916,7 +1542,7 @@ func materializeShapeFiles(changeDir, writableRoot, projectRoot, title string, a
 		} else if !os.IsNotExist(err) {
 			return nil, err
 		}
-		if err := os.WriteFile(path, file.data, 0o644); err != nil {
+		if err := writeFileAtomically(path, file.data, 0o644); err != nil {
 			return nil, err
 		}
 		changed = append(changed, FileMutation{Path: runeContextRelativePath(writableRoot, path), Action: "created"})

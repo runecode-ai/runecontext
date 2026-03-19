@@ -724,7 +724,6 @@ func stageReallocatedChange(oldChangeDir, stagedDir, oldID, newID string) ([]Fil
 			}
 			statusMap = cloneMap(statusMap)
 			statusMap["id"] = newID
-			rewriteStatusChangeIDRefs(statusMap, oldID, newID)
 			data, err = renderStatusYAML(statusMap)
 			if err != nil {
 				return err
@@ -761,26 +760,6 @@ func stageReallocatedChange(oldChangeDir, stagedDir, oldID, newID string) ([]Fil
 
 func changeMarkdownPathPrefix(changeID string) string {
 	return filepath.ToSlash(filepath.Join("changes", changeID)) + "/"
-}
-
-func rewriteStatusChangeIDRefs(raw map[string]any, oldID, newID string) {
-	for _, key := range []string{"related_changes", "depends_on", "informed_by", "supersedes", "superseded_by"} {
-		items := extractStringList(raw[key])
-		if len(items) == 0 {
-			continue
-		}
-		changed := false
-		for i, item := range items {
-			if item != oldID {
-				continue
-			}
-			items[i] = newID
-			changed = true
-		}
-		if changed {
-			raw[key] = stringSliceToAny(items)
-		}
-	}
 }
 
 func rewriteMarkdownChangePathMentions(data []byte, oldRoot, newRoot string) ([]byte, int, error) {

@@ -765,7 +765,10 @@ func TestReallocateChangeRejectsSymlinksInChangeDirectory(t *testing.T) {
 		t.Fatalf("create change: %v", err)
 	}
 	changeDir := filepath.Join(root, "runecontext", "changes", result.ID)
-	if err := os.Symlink("proposal.md", filepath.Join(changeDir, "proposal-link.md")); err != nil {
+	if err := tryCreateSymlink("proposal.md", filepath.Join(changeDir, "proposal-link.md")); err != nil {
+		if strings.Contains(err.Error(), "symlink tests skipped") {
+			t.Skip(err)
+		}
 		t.Fatalf("create symlink: %v", err)
 	}
 	loaded, err = v.LoadProject(root, ResolveOptions{ConfigDiscovery: ConfigDiscoveryExplicitRoot, ExecutionMode: ExecutionModeLocal})
@@ -867,25 +870,6 @@ func TestReallocateChangeReturnsCleanupWarning(t *testing.T) {
 	}
 	if len(reallocated.Warnings) != 1 || !strings.Contains(reallocated.Warnings[0], "forced cleanup failure") {
 		t.Fatalf("expected cleanup warning, got %#v", reallocated.Warnings)
-	}
-}
-
-func TestRewriteStatusChangeIDRefsUpdatesLocalLists(t *testing.T) {
-	raw := map[string]any{
-		"related_changes": []any{"CHG-2026-001-a3f2-auth-gateway", "CHG-2026-002-b4c3-auth-revision"},
-		"depends_on":      []any{"CHG-2026-001-a3f2-auth-gateway"},
-		"informed_by":     []any{"CHG-2026-009-c0de-auth-notes"},
-		"supersedes":      []any{"CHG-2026-001-a3f2-auth-gateway"},
-		"superseded_by":   []any{},
-	}
-	rewriteStatusChangeIDRefs(raw, "CHG-2026-001-a3f2-auth-gateway", "CHG-2026-010-dd44-auth-gateway")
-	for _, key := range []string{"related_changes", "depends_on", "supersedes"} {
-		if got := strings.Join(extractStringList(raw[key]), ","); strings.Contains(got, "CHG-2026-001-a3f2-auth-gateway") {
-			t.Fatalf("expected %s to rewrite old ID, got %q", key, got)
-		}
-	}
-	if got := strings.Join(extractStringList(raw["informed_by"]), ","); got != "CHG-2026-009-c0de-auth-notes" {
-		t.Fatalf("expected unrelated IDs to remain untouched, got %q", got)
 	}
 }
 

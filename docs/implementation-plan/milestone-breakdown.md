@@ -518,9 +518,9 @@ Post-review clarifications:
   collide.
   - Post-review hardening: reject terminal or externally referenced changes,
     stage outside the live `changes/` tree, reject symlinked change artifacts,
-    rewrite self-referential status metadata, preserve unchanged markdown bytes,
-    and surface backup-cleanup as a warning rather than an ambiguous command
-    failure.
+    keep reallocation rewrites scoped to local change-path references, preserve
+    unchanged markdown bytes, and surface backup-cleanup as a warning rather
+    than an ambiguous command failure.
 
 ### Cross-Cutting Workflow Tests and Fixtures
 

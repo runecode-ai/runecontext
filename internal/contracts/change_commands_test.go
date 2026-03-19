@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -547,6 +548,9 @@ func TestCloseChangePreservesFilePermissions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("stat rewritten status: %v", err)
 	}
+	if runtime.GOOS == "windows" {
+		return
+	}
 	if got, want := info.Mode().Perm(), fs.FileMode(0o600); got != want {
 		t.Fatalf("expected close rewrite to preserve perms %o, got %o", want, got)
 	}
@@ -624,6 +628,9 @@ func TestWriteFileAtomicallyFallsBackWhenDestinationRenameCannotReplace(t *testi
 	info, err := os.Stat(targetPath)
 	if err != nil {
 		t.Fatalf("stat replaced target: %v", err)
+	}
+	if runtime.GOOS == "windows" {
+		return
 	}
 	if got, want := info.Mode().Perm(), os.FileMode(0o600); got != want {
 		t.Fatalf("expected fallback replace to preserve perms %o, got %o", want, got)

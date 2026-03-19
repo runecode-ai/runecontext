@@ -230,11 +230,18 @@ func CreateChange(v *Validator, loaded *LoadedProject, options ChangeCreateOptio
 		now = time.Now().UTC()
 	}
 	changesRoot := filepath.Join(writableRoot, "changes")
+	if err := ensurePathAndParentAreNotSymlinks(changesRoot); err != nil {
+		return nil, err
+	}
 	if err := os.MkdirAll(changesRoot, 0o755); err != nil {
 		return nil, err
 	}
 	id, changeDir, err := createUniqueChangeDir(writableRoot, now, options.Title, options.Entropy)
 	if err != nil {
+		return nil, err
+	}
+	if err := ensurePathAndParentAreNotSymlinks(changeDir); err != nil {
+		_ = removeAllPath(changeDir)
 		return nil, err
 	}
 	cleanupChangeDir := true
@@ -456,6 +463,9 @@ func CloseChange(v *Validator, loaded *LoadedProject, changeID string, options C
 		return nil, err
 	}
 	statusWrites := make([]fileRewrite, 0, 1+len(options.SupersededBy))
+	if err := ensurePathAndParentAreNotSymlinks(record.StatusPath); err != nil {
+		return nil, err
+	}
 	mainStatusData, err := prepareStatusRewrite(v, record.StatusPath, updated)
 	if err != nil {
 		return nil, err
@@ -470,6 +480,9 @@ func CloseChange(v *Validator, loaded *LoadedProject, changeID string, options C
 		if !containsString(supersedes, changeID) {
 			if isTerminalLifecycleStatus(successor.Status) {
 				return nil, fmt.Errorf("successor change %q is already in terminal status %q and cannot be updated with a reciprocal supersedes link", successorID, successor.Status)
+			}
+			if err := ensurePathAndParentAreNotSymlinks(successor.StatusPath); err != nil {
+				return nil, err
 			}
 			supersedes = append(supersedes, changeID)
 			successorStatus["supersedes"] = stringSliceToAny(uniqueSortedStrings(supersedes))
@@ -595,24 +608,11 @@ func combineFileRewriteRollbackError(operationErr, rollbackErr error) error {
 }
 
 func ensurePathAndParentAreNotSymlinks(path string) error {
-	candidates := make([]string, 0, 4)
-	current := filepath.Clean(path)
-	for {
-		candidates = append(candidates, current)
-		next := filepath.Dir(current)
-		if next == current {
-			break
-		}
-		current = next
-	}
-	for i := len(candidates) - 1; i >= 0; i-- {
-		candidate := candidates[i]
+	cleanPath := filepath.Clean(path)
+	for _, candidate := range []string{filepath.Dir(cleanPath), cleanPath} {
 		info, err := lstatPath(candidate)
 		if os.IsNotExist(err) {
-			if i == 0 {
-				continue
-			}
-			return err
+			continue
 		}
 		if err != nil {
 			return err

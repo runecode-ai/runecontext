@@ -200,10 +200,7 @@ func TestBuildContextPackNormalizesTextLineEndingsForHashing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read mission file: %v", err)
 	}
-	crlf := strings.ReplaceAll(string(data), "\n", "\r\n")
-	if err := os.WriteFile(missionPath, []byte(crlf), 0o644); err != nil {
-		t.Fatalf("rewrite mission file with CRLF: %v", err)
-	}
+	rewriteMissionFilesForLineEndingParityTest(t, rootA, missionPath, data)
 	indexA, err := v.ValidateProject(rootA)
 	if err != nil {
 		t.Fatalf("validate LF project: %v", err)
@@ -225,6 +222,19 @@ func TestBuildContextPackNormalizesTextLineEndingsForHashing(t *testing.T) {
 	}
 	if !reflect.DeepEqual(comparableContextPack(packA), comparableContextPack(packB)) {
 		t.Fatalf("expected CRLF-normalized pack parity\npackA: %#v\npackB: %#v", comparableContextPack(packA), comparableContextPack(packB))
+	}
+}
+
+func rewriteMissionFilesForLineEndingParityTest(t *testing.T, rootA, missionPath string, data []byte) {
+	t.Helper()
+	lf := strings.ReplaceAll(string(data), "\r\n", "\n")
+	lf = strings.ReplaceAll(lf, "\r", "\n")
+	crlf := strings.ReplaceAll(lf, "\n", "\r\n")
+	if err := os.WriteFile(filepath.Join(rootA, "runecontext", "project", "mission.md"), []byte(lf), 0o644); err != nil {
+		t.Fatalf("rewrite mission file with LF: %v", err)
+	}
+	if err := os.WriteFile(missionPath, []byte(crlf), 0o644); err != nil {
+		t.Fatalf("rewrite mission file with CRLF: %v", err)
 	}
 }
 

@@ -62,6 +62,10 @@ The canonical local workflow uses Nix + `just`:
 - Canonical command surface: `just`
 - CI runs the same logical checks as `just ci`
 
+`just lint` is the canonical local lint entrypoint. It includes the repo's
+source-quality gate in addition to formatting, lint, and vet checks. See
+`docs/source-quality.md` for the current policy and protected surfaces.
+
 ### Use the dev shell manually
 
 ```sh
@@ -107,7 +111,8 @@ See `CODE_OF_CONDUCT.md`.
 - Keep changes focused and well-described.
 - Ensure your commits are signed off (`git commit -s`).
 - Ensure tests/lint pass for the areas you changed.
-- Call out changes to `flake.nix`, `flake.lock`, release logic, or governance
-  docs so reviewers can give those areas extra attention.
+- Call out changes to `flake.nix`, `flake.lock`, release logic, governance
+  docs, or protected source-quality surfaces documented in
+  `docs/source-quality.md` so reviewers can give those areas extra attention.
 
 If you are unsure about a design direction, open an issue first.

@@ -1,12 +1,12 @@
 # RuneContext - Portable, markdown-first project knowledge, standards, and context bundles
 
-[![CI](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml/badge.svg)](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml) [![Status: pre-alpha](https://img.shields.io/badge/status-pre--alpha-orange)](docs/implementation-plan/README.md) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![CI](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml/badge.svg)](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml) [![Status: alpha.3](https://img.shields.io/badge/status-alpha.3-orange)](docs/implementation-plan/README.md) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 RuneContext is a portable, markdown-first, git-native system for project knowledge, standards, changes, and reusable context bundles. It is AI-tooling-agnostic by design, so teams can use the same source artifacts with different tools or manual workflows without turning the format into a product-specific silo.
 
 ## Status
 
-RuneContext is pre-alpha and not production-ready. The current repository now includes the alpha.1 contract foundation plus the alpha.2 source-resolution and bundle-engine slice: frozen core contracts, versioned schemas, fixtures, Go validation code, embedded/git/path source resolution, monorepo discovery, signed-tag verification with explicit trusted-signer input, and deterministic bundle semantics. Change workflow, context-pack generation, assurance flows, adapters, and the broader CLI surface remain in progress toward `v0.1.0`.
+RuneContext is still pre-MVP and not production-ready. The current repository now includes the alpha.1 contract foundation, the alpha.2 source-resolution and bundle-engine slice, and the alpha.3 change-workflow slice: frozen core contracts, versioned schemas, fixtures, Go validation code, embedded/git/path source resolution, monorepo discovery, signed-tag verification with explicit trusted-signer input, deterministic bundle semantics, standards linkage, traceability, stable change IDs, and thin change/status CLI commands. Context-pack generation, assurance flows, adapters, and the broader CLI surface remain in progress toward `v0.1.0`.
 
 ## Why RuneContext
 
@@ -28,18 +28,21 @@ RuneContext is pre-alpha and not production-ready. The current repository now in
 ## What's Implemented Today
 
 - Normative core contracts in `core/` for terminology, boundaries, layout, and trust rules.
-- Versioned schemas in `schemas/` for `runecontext.yaml`, bundles, change status, context packs, specs, and decisions.
-- Contract fixtures in `fixtures/` for schema validation, markdown structure, cross-artifact traceability, source resolution, and bundle resolution.
-- A Go validation and resolution foundation in `internal/contracts/` plus a narrow `runectx validate [--ssh-allowed-signers PATH] [path]` command in `cmd/runectx/`.
+- Versioned schemas in `schemas/` for `runecontext.yaml`, bundles, change status, context packs, specs, decisions, and standards.
+- Contract fixtures in `fixtures/` for schema validation, markdown structure, cross-artifact traceability, source resolution, bundle resolution, and change workflow.
+- A Go validation, resolution, and change-workflow foundation in `internal/contracts/` plus thin alpha.3 CLI commands in `cmd/runectx/`.
 - Source resolution for embedded projects, linked git sources by pinned commit, linked git sources by signed tag, opt-in mutable refs, local path sources, and nearest-ancestor monorepo discovery.
+- Change authoring and history-preserving workflow operations for stable change IDs, minimum/full shaping, standards linkage, lifecycle validation, and fail-closed close/reallocate behavior.
 - Deterministic context bundle loading and evaluation with inheritance linearization, cycle/depth rejection, ordered include/exclude precedence, concrete per-rule match inventories, and fail-closed path/symlink containment.
+- Thin CLI support for `runectx validate`, `runectx status`, `runectx change new`, `runectx change shape`, `runectx change close`, and `runectx change reallocate`.
 - Nix, `just`, and GitHub Actions scaffolding for repeatable development, checks, and release work.
 
 Still incremental / not implemented end-to-end yet:
 
 - Context-pack generation, hashing, generated indexes, and promotion assessment.
-- Change authoring, shaping, promotion, and assurance workflows.
-- Thin adapter packs plus the broader CLI and automation surface planned for later alphas.
+- Verified assurance flows, baselines, receipts, and backfill.
+- Broader CLI/admin commands such as `init`, `bundle resolve`, `doctor`, `promote`, and assurance enablement/backfill.
+- Thin adapter packs plus the later alpha adapter-management and automation surface.
 
 ## What The MVP Includes
 
@@ -72,16 +75,17 @@ Still incremental / not implemented end-to-end yet:
 
 - `core/` - normative core contracts for RuneContext terminology, boundaries, layout, and trust rules.
 - `schemas/` - hand-authored JSON Schemas and machine-readable contract docs.
-- `fixtures/` - shared fixture families for schema, markdown, and traceability validation.
+- `fixtures/` - shared fixture families for schema, markdown, traceability, source/bundle resolution, and change-workflow validation.
 - `cmd/runectx/` - the Go CLI entrypoint for `runectx`.
-- `internal/` - shared Go implementation packages, including contract validation.
+- `internal/` - shared Go implementation packages for validation, source resolution, and change workflow.
 - `adapters/` - tool-specific adapter packs and docs as that surface grows.
 - `docs/` - design, planning, installation, and release-process documentation.
+- `tools/` - repository-owned quality and maintenance tooling.
 - `nix/` - canonical dev-shell, check, and release-artifact definitions.
 
 ## Install / Try The CLI
 
-The recommended way to use RuneContext is through the `runectx` CLI. Even in the current pre-alpha, the CLI is the main executable entrypoint for validating RuneContext projects, and later releases are planned to expand it into the primary setup, update, and adapter-management surface.
+The recommended way to use RuneContext is through the `runectx` CLI. Even in the current alpha.3 pre-MVP state, the CLI is the main executable entrypoint for validating RuneContext projects and managing the implemented change workflow, and later releases are planned to expand it into the primary setup, update, and adapter-management surface.
 
 The long-term canonical install path is a reviewable repo bundle from GitHub Releases. Today, the simplest way to get started is to build `runectx` from the current checkout.
 
@@ -97,20 +101,32 @@ Use the installed CLI against a RuneContext project:
 
 ```sh
 runectx validate /path/to/project
+runectx status /path/to/project
 ```
 
 Current CLI scope:
 
 - `runectx validate [--ssh-allowed-signers PATH] [path]`
-- Validates source settings, bundle semantics, markdown contracts, spec/decision metadata, and cross-artifact traceability.
-- Supports embedded, git, path, and monorepo project layouts.
-- Supports signed-tag verification when you provide explicit trusted signer material with `--ssh-allowed-signers`.
-- Emits stable line-oriented `key=value` output for automation before broader `--json` support lands.
+  - validates source settings, bundle semantics, markdown contracts, standards/spec/decision metadata, and cross-artifact traceability
+  - supports embedded, git, path, and monorepo project layouts
+  - supports signed-tag verification when you provide explicit trusted signer material with `--ssh-allowed-signers`
+- `runectx status [path]`
+  - reports active, closed, and superseded changes plus bundle/root metadata
+- `runectx change new --title TITLE --type TYPE ...`
+  - creates a minimum change by default and auto-shapes large or project work
+- `runectx change shape CHANGE_ID ...`
+  - materializes `design.md` and `verification.md` by default
+- `runectx change close CHANGE_ID ...`
+  - closes or supersedes a change without moving it off its stable path
+- `runectx change reallocate CHANGE_ID [--path PATH]`
+  - reallocates a rare colliding change ID before merge and rewrites only local in-change references
+- The current thin commands emit stable line-oriented `key=value` output for automation before broader `--json` support lands.
 
 If you want to try the CLI without installing it first:
 
 ```sh
 go run ./cmd/runectx validate
+go run ./cmd/runectx status
 ```
 
 If you prefer to inspect or vendor release contents directly, the long-term canonical distribution remains a reviewable repo bundle from GitHub Releases; the CLI binary is a convenience entrypoint on top of that release model.
@@ -124,6 +140,9 @@ just lint
 just test
 just check
 ```
+
+`just lint` includes the repo's source-quality gate in addition to formatting,
+lint, and vet checks. See `docs/source-quality.md` for the current policy.
 
 For release verification and maintainer workflow details, see `docs/install-verify.md` and `docs/release-process.md`.
 
@@ -143,6 +162,7 @@ If you copied or vendored RuneContext files into another repository from a relea
 - `docs/implementation-plan/README.md` - the alpha-by-alpha implementation plan.
 - `core/README.md` - the entrypoint for normative core contracts.
 - `schemas/README.md` - schema inventory and contract notes.
+- `docs/source-quality.md` - source-quality policy and protected review surfaces.
 - `docs/install-verify.md` - install and verification guidance.
 - `docs/release-process.md` - maintainer release workflow.
 

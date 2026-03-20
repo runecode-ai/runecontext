@@ -161,11 +161,20 @@ provenance fields), and `alpha.8` (release/reference-project validation).
 - Keep the on-disk model, schemas, and resolution semantics canonical.
 - Treat adapters as UX layers, not alternate sources of truth.
 - Keep generated artifacts derived and reviewable.
+- Keep portable generated artifacts free of host-specific absolute paths;
+  persisted path fields should use stable RuneContext-relative or equivalently
+  portable identifiers.
 - Keep one core authored workflow across `plain` and `verified`; higher
   assurance adds evidence rather than alternate source-of-truth files.
 - Keep repositories self-sufficient for mixed standalone RuneContext and
   RuneCode teams; RuneCode evidence may be richer but must remain additive
   rather than required for correctness.
+- Keep deployment-specific evidence discovery, service locators, tenancy/auth,
+  and checkpoint-routing metadata outside RuneContext core semantics; RuneCode-
+  owned metadata may reference RuneContext outputs without redefining them.
+- Keep context packs generally on-demand or ephemeral, and keep high-frequency
+  runtime evidence out of the committed RuneContext tree; baselines and minimal
+  portable receipts may be committed when assurance requires them.
 - Keep shaped change docs lean: `design.md` and `verification.md` are the
   default shaped artifacts, while `tasks.md` and `references.md` are created
   only when they add real value.
@@ -219,6 +228,9 @@ until the end.
   with the same core semantics.
 - Add adapter tests ensuring that mutations to authoritative RuneContext files
   automatically trigger `runectx validate` and surface failures immediately.
+- Add clean-machine and no-hidden-state parity tests showing that portable
+  outputs stay correct when home-directory state, caches, or other non-declared
+  local tool state are absent.
 - Add RuneCode companion parity fixtures wherever this repository defines a
   contract RuneCode will later consume.
 - Do not treat a feature as complete in any alpha until the tests and fixtures

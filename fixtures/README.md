@@ -14,6 +14,9 @@ This directory holds the repository-wide fixture taxonomy for RuneContext contra
   - multi-file project fixtures and goldens for bundle inheritance, precedence, diagnostics, and path-boundary guardrails
 - `source-resolution/`
   - source-mode, discovery, and structured resolution metadata fixtures for alpha.2
+- `change-workflow/`
+  - alpha.3 project fixtures and golden outputs for change creation, shaping,
+    closing, supersession, and rewrite-safe history preservation
 
 ## Reserved Future Fixture Families
 

@@ -178,6 +178,10 @@
 - [ ] Context packs record the resolved source revision and verification posture.
 - [ ] Context packs retain compact deterministic provenance and leave room for
   fuller provenance receipts in Verified mode.
+- [ ] Persisted context-pack fields use portable stable identifiers and path
+  forms rather than host-specific absolute paths.
+- [ ] Context-pack semantics do not embed deployment-specific evidence-service
+  locator, endpoint, auth, or tenancy metadata.
 - [ ] Size and provenance threshold warnings exist with the default advisory
   thresholds from the design document.
 - [ ] Promotion assessment is structured and reviewable.
@@ -197,6 +201,12 @@
   that a Verified repository requires for mixed-team collaboration.
 - [ ] RuneCode may attach richer parallel audit evidence without becoming the
   only place correctness-critical assurance state lives.
+- [ ] Verified commit policy preserves a low-noise portable tree: baselines and
+  minimal portable receipts may be committed, while high-frequency runtime
+  evidence stays outside RuneContext's core repository model.
+- [ ] Portable assurance artifacts do not depend on home-directory caches,
+  external service availability, or deployment-specific evidence locator
+  metadata for correctness.
 - [ ] Receipt filenames are collision-resistant and do not require a shared
   mutable index.
 - [ ] Backfill can generate imported historical provenance distinct from native

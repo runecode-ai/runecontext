@@ -603,6 +603,20 @@ Primary outcome: generate deterministic resolved outputs and supporting indexes
 that make RuneContext consumable by power users, automation, and future
 RuneCode integration.
 
+### Implementation Notes
+
+- Persisted context-pack fields should use portable path and identity forms;
+  host-specific absolute paths are acceptable for local diagnostics but must not
+  become part of the canonical generated pack representation.
+- Context-pack semantics must not embed evidence-service endpoints, locator
+  metadata, tenancy/auth details, or other deployment-specific runtime routing.
+  Those concerns belong to RuneCode-owned integration metadata rather than
+  RuneContext core format meaning.
+- Context packs are generated portable artifacts and should usually remain
+  on-demand or ephemeral; future runtime systems may bind to `pack_hash`
+  without requiring context packs themselves or high-frequency runtime evidence
+  dumps to live in git.
+
 ### Epic 1: Context-pack generation
 
 - [ ] Issue: implement selected and excluded file inventories with per-file
@@ -656,6 +670,9 @@ RuneCode integration.
   warnings using the documented default values.
 - [ ] Issue: add tests for changed-file fail-closed behavior between
   enumeration, hashing, and delivery preparation.
+- [ ] Issue: add clean-machine parity tests showing that CLI and library pack
+  generation stay deterministic without relying on host caches, home-directory
+  state, or other hidden local metadata.
 - [ ] Issue: add fixtures for generated manifest and change-index stability.
 
 ### Exit Criteria
@@ -663,6 +680,9 @@ RuneCode integration.
 - Any bundle selection can be flattened into a deterministic context pack.
 - The context pack contains the top-level canonical hash required for future
   audit binding.
+- Persisted context-pack artifacts remain portable and do not require host-
+  specific absolute paths or deployment-specific evidence-service metadata to
+  interpret correctly.
 - Promotion assessment is structured and reviewable.
 - Generated indexes aid browsing without becoming the source of truth.
 - Deterministic outputs are protected by golden tests rather than manual spot
@@ -691,6 +711,13 @@ verifiable tracing, while keeping assurance progressive rather than mandatory.
   Verified receipts that mixed-team collaboration depends on.
 - RuneCode may add richer parallel audit evidence, but that evidence must remain
   additive and must not become hidden required state for correctness.
+- Verified commit policy should preserve RuneContext's low-noise posture:
+  baselines and minimal portable receipts may be committed when needed, but
+  high-frequency runtime evidence must stay outside the portable RuneContext
+  tree.
+- Deployment-specific evidence discovery and service-routing metadata must stay
+  outside RuneContext core semantics even when RuneCode later consumes portable
+  baselines and receipts.
 
 ### Epic 1: Assurance-tier model
 
@@ -737,6 +764,9 @@ verifiable tracing, while keeping assurance progressive rather than mandatory.
   `imported_git_history` provenance.
 - [ ] Issue: add tests for Verified enablement, backfill flow, and merge-safe
   receipt generation.
+- [ ] Issue: add clean-machine and no-hidden-state tests showing that portable
+  assurance artifacts do not depend on host caches, service availability, or
+  deployment-specific local metadata for correctness.
 - [ ] Issue: add fixtures RuneCode can reuse to test audited-workflow gating and
   provenance ingestion.
 
@@ -747,6 +777,9 @@ verifiable tracing, while keeping assurance progressive rather than mandatory.
   consumption.
 - Verified repositories remain fully usable by mixed standalone RuneContext and
   RuneCode teams through the same portable receipt model.
+- Verified repositories preserve a low-noise commit policy and do not require
+  deployment-specific evidence-service metadata or external service availability
+  for correctness.
 - Historical backfill can strengthen trust without pretending to be native
   verified capture.
 - Assurance behavior is covered by deterministic fixtures rather than narrative

@@ -23,11 +23,12 @@ This directory now contains the initial Go CLI entrypoint.
     tree, and fails closed when external artifacts reference the old ID
   - rewrites local change-path references inside the change and returns warnings
     instead of ambiguous failures when only backup cleanup needs manual follow-up
-- `runectx validate [path]`
+- `runectx validate [--ssh-allowed-signers PATH] [path]`
   - validates the root `runecontext.yaml`
-  - validates change status files, markdown contracts, spec/decision frontmatter,
-    and project-level traceability
+  - validates change status files, markdown contracts, standards/spec/decision
+    frontmatter, and project-level traceability
   - fails closed on schema, YAML-profile, and cross-artifact reference errors
+  - supports explicit SSH allowed-signers input for signed-tag verification
   - emits stable line-oriented `key=value` output for success, validation
     failure, and usage errors without introducing full `--json` yet
 

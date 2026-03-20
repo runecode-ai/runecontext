@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -82,6 +83,13 @@ func TestMarshalCanonicalJSONRejectsFloatValues(t *testing.T) {
 	}
 }
 
+func TestMarshalCanonicalJSONRejectsUnsupportedScalarValues(t *testing.T) {
+	_, err := marshalCanonicalJSON(map[string]any{"bad": struct{ Name string }{Name: "x"}})
+	if err == nil || !strings.Contains(err.Error(), "unsupported canonical JSON value") {
+		t.Fatalf("expected unsupported scalar rejection, got %v", err)
+	}
+}
+
 func TestMarshalCanonicalJSONRejectsInvalidUTF8Strings(t *testing.T) {
 	_, err := marshalCanonicalJSON(map[string]any{"bad": string([]byte{0xff})})
 	if err == nil || !strings.Contains(err.Error(), "valid UTF-8") {
@@ -101,6 +109,35 @@ func TestContextPackSchemaConstantsMatchMachineContracts(t *testing.T) {
 	assertRequiredContextPackFields(t, schema)
 	assertRequestedBundleIDsSchema(t, properties)
 	assertSchemaPatternValue(t, properties, "id", `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
+}
+
+func TestContextPackReportSchemaVersionMatchesMachineContracts(t *testing.T) {
+	data := readFixture(t, filepath.Join(schemaRoot(t), "context-pack-report.schema.json"))
+	var schema map[string]any
+	if err := json.Unmarshal(data, &schema); err != nil {
+		t.Fatalf("parse context-pack-report schema: %v", err)
+	}
+	properties := schemaProperties(t, schema)
+	assertSchemaConstValue(t, properties, "report_schema_version", "1")
+	assertReportWarningMinimums(t, properties)
+}
+
+func assertReportWarningMinimums(t *testing.T, properties map[string]any) {
+	t.Helper()
+	warnings, ok := properties["warnings"].(map[string]any)
+	if !ok {
+		t.Fatal("expected warnings schema property")
+	}
+	items, ok := warnings["items"].(map[string]any)
+	if !ok {
+		t.Fatal("expected warnings.items schema")
+	}
+	itemProps, ok := items["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("expected warnings.items.properties schema")
+	}
+	assertSchemaMinimumValue(t, itemProps, "value", 0)
+	assertSchemaMinimumValue(t, itemProps, "threshold", 0)
 }
 
 func schemaProperties(t *testing.T, schema map[string]any) map[string]any {
@@ -149,13 +186,19 @@ func assertSchemaConstValue(t *testing.T, properties map[string]any, field, want
 	if !ok {
 		t.Fatalf("expected schema property %q", field)
 	}
-	got, ok := property["const"].(string)
-	if !ok {
-		t.Fatalf("expected schema property %q to define string const", field)
+	if got, ok := property["const"].(string); ok {
+		if got != want {
+			t.Fatalf("expected schema property %q const %q, got %q", field, want, got)
+		}
+		return
 	}
-	if got != want {
-		t.Fatalf("expected schema property %q const %q, got %q", field, want, got)
+	if got, ok := property["const"].(float64); ok {
+		if fmt.Sprintf("%.0f", got) != want {
+			t.Fatalf("expected schema property %q const %q, got %v", field, want, got)
+		}
+		return
 	}
+	t.Fatalf("expected schema property %q to define scalar const", field)
 }
 
 func assertSchemaPatternValue(t *testing.T, properties map[string]any, field, want string) {
@@ -170,6 +213,21 @@ func assertSchemaPatternValue(t *testing.T, properties map[string]any, field, wa
 	}
 	if got != want {
 		t.Fatalf("expected schema property %q pattern %q, got %q", field, want, got)
+	}
+}
+
+func assertSchemaMinimumValue(t *testing.T, properties map[string]any, field string, want float64) {
+	t.Helper()
+	property, ok := properties[field].(map[string]any)
+	if !ok {
+		t.Fatalf("expected schema property %q", field)
+	}
+	got, ok := property["minimum"].(float64)
+	if !ok {
+		t.Fatalf("expected schema property %q to define numeric minimum", field)
+	}
+	if got != want {
+		t.Fatalf("expected schema property %q minimum %v, got %v", field, want, got)
 	}
 }
 

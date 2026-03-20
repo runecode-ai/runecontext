@@ -207,6 +207,27 @@
   locator, endpoint, auth, or tenancy metadata.
 - [ ] Size and provenance threshold warnings exist with the default advisory
   thresholds from the design document.
+- [ ] Machine-readable context-pack reports carry an explicit schema version and
+  validate against a dedicated report schema.
+- [ ] The dedicated report schema clearly documents that the embedded `pack`
+  still requires separate context-pack schema validation when consumers need
+  full contract enforcement.
+- [ ] Report advisory warning fields are constrained as non-negative counters in
+  schema contracts (`value`, `threshold`) so impossible warning payloads fail
+  validation.
+- [ ] Pack-only generation remains available without forcing callers to pay for
+  enriched report serialization logic when they only need the pack artifact.
+- [ ] Advisory-threshold API semantics are documented and tested for default,
+  explicit-zero, and negative-fallback cases.
+- [ ] Advisory-threshold defaults are exposed without mutable process-wide
+  global state so callers cannot silently rewrite default warning behavior.
+- [ ] Fail-closed rebuild checks surface non-transient digest/read errors
+  directly instead of collapsing them into a generic changed-input retry.
+- [ ] Test-only context-pack read-hook helpers are nil-safe and fall back to the
+  real file reader rather than panicking when hooks are unset.
+- [ ] Fail-closed rebuild semantics are documented as operating against the
+  loaded project snapshot and selected-file content, not hot-reloading bundle
+  definitions from disk mid-attempt.
 - [ ] Change close deterministically records promotion assessment as `none` or
   `suggested`, while later workflows may advance reviewable promotions to
   `accepted` and `completed`.

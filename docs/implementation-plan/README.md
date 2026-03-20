@@ -171,6 +171,22 @@ and coverage stay in one place.
   portable, LF/CRLF text checkouts hash identically, and the emitted pack
   canonicalization token is RuneContext-owned rather than an overclaimed full
   RFC 8785 label.
+- Branch Cut 2 hardening also clarifies that machine-readable pack reports carry
+  their own explicit schema version and schema file, non-transient stability
+  check read errors must surface directly instead of being masked as generic
+  rebuild noise, and pack-only versus enriched report-building flows should stay
+  separable even when they share the same fail-closed rebuild logic.
+- That same hardening also documents two narrower Branch Cut 2 boundaries: a
+  zero-valued advisory-threshold struct means "use defaults" while explicit
+  field zeros remain meaningful once any field is set, and rebuild stability is
+  evaluated against the loaded project snapshot rather than hot-reloading bundle
+  definitions from disk mid-attempt.
+- The advisory-threshold defaults themselves should also be exposed as copy-
+  returning values rather than mutable exported global structs so tests and
+  callers cannot silently rewrite process-wide defaults.
+- Branch Cut 2 review cleanup additionally tightens report warning schema fields
+  to non-negative counters and keeps test-only read-hook plumbing nil-safe via a
+  fallback to the real file reader.
 - The recommended alpha.4 review order is pack engine and determinism fixtures,
   then pack explanation and limits, then promotion assessment, and finally
   generated indexes/manifests.

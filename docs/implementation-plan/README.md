@@ -184,6 +184,9 @@ and coverage stay in one place.
 - The advisory-threshold defaults themselves should also be exposed as copy-
   returning values rather than mutable exported global structs so tests and
   callers cannot silently rewrite process-wide defaults.
+- Branch Cut 2 review cleanup additionally tightens report warning schema fields
+  to non-negative counters and keeps test-only read-hook plumbing nil-safe via a
+  fallback to the real file reader.
 - The recommended alpha.4 review order is pack engine and determinism fixtures,
   then pack explanation and limits, then promotion assessment, and finally
   generated indexes/manifests.

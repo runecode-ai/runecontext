@@ -212,6 +212,9 @@
 - [ ] The dedicated report schema clearly documents that the embedded `pack`
   still requires separate context-pack schema validation when consumers need
   full contract enforcement.
+- [ ] Report advisory warning fields are constrained as non-negative counters in
+  schema contracts (`value`, `threshold`) so impossible warning payloads fail
+  validation.
 - [ ] Pack-only generation remains available without forcing callers to pay for
   enriched report serialization logic when they only need the pack artifact.
 - [ ] Advisory-threshold API semantics are documented and tested for default,
@@ -220,6 +223,8 @@
   global state so callers cannot silently rewrite default warning behavior.
 - [ ] Fail-closed rebuild checks surface non-transient digest/read errors
   directly instead of collapsing them into a generic changed-input retry.
+- [ ] Test-only context-pack read-hook helpers are nil-safe and fall back to the
+  real file reader rather than panicking when hooks are unset.
 - [ ] Fail-closed rebuild semantics are documented as operating against the
   loaded project snapshot and selected-file content, not hot-reloading bundle
   definitions from disk mid-attempt.

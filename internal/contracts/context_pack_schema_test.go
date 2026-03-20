@@ -119,6 +119,25 @@ func TestContextPackReportSchemaVersionMatchesMachineContracts(t *testing.T) {
 	}
 	properties := schemaProperties(t, schema)
 	assertSchemaConstValue(t, properties, "report_schema_version", "1")
+	assertReportWarningMinimums(t, properties)
+}
+
+func assertReportWarningMinimums(t *testing.T, properties map[string]any) {
+	t.Helper()
+	warnings, ok := properties["warnings"].(map[string]any)
+	if !ok {
+		t.Fatal("expected warnings schema property")
+	}
+	items, ok := warnings["items"].(map[string]any)
+	if !ok {
+		t.Fatal("expected warnings.items schema")
+	}
+	itemProps, ok := items["properties"].(map[string]any)
+	if !ok {
+		t.Fatal("expected warnings.items.properties schema")
+	}
+	assertSchemaMinimumValue(t, itemProps, "value", 0)
+	assertSchemaMinimumValue(t, itemProps, "threshold", 0)
 }
 
 func schemaProperties(t *testing.T, schema map[string]any) map[string]any {
@@ -194,6 +213,21 @@ func assertSchemaPatternValue(t *testing.T, properties map[string]any, field, wa
 	}
 	if got != want {
 		t.Fatalf("expected schema property %q pattern %q, got %q", field, want, got)
+	}
+}
+
+func assertSchemaMinimumValue(t *testing.T, properties map[string]any, field string, want float64) {
+	t.Helper()
+	property, ok := properties[field].(map[string]any)
+	if !ok {
+		t.Fatalf("expected schema property %q", field)
+	}
+	got, ok := property["minimum"].(float64)
+	if !ok {
+		t.Fatalf("expected schema property %q to define numeric minimum", field)
+	}
+	if got != want {
+		t.Fatalf("expected schema property %q minimum %v, got %v", field, want, got)
 	}
 }
 

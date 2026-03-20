@@ -158,6 +158,9 @@ plan so it is clear that the planning documents capture the full design.
 - Decision: report-envelope validation and embedded-pack validation remain
   distinct contracts; consumers that need full guarantees must validate both.
   - Planned capture: `alpha.4`
+- Decision: report advisory warning counters should be non-negative in schema
+  contracts (`value`, `threshold`) to reject impossible machine payloads.
+  - Planned capture: `alpha.4`
 - Decision: fail-closed rebuild checks should retry only on genuinely transient
   file-instability signals; non-transient digest/read failures must surface as
   direct errors.
@@ -172,6 +175,9 @@ plan so it is clear that the planning documents capture the full design.
 - Decision: rebuild stability checks operate against the loaded project snapshot
   and selected-file content rather than reloading bundle-definition files from
   disk mid-attempt.
+  - Planned capture: `alpha.4`
+- Decision: test-only context-pack read-hook helpers should fail safe by falling
+  back to the real file reader when unset instead of panicking.
   - Planned capture: `alpha.4`
 - Decision: RuneCode isolate delivery uses typed transport and hash-addressed
   artifacts.

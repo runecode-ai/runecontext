@@ -410,9 +410,15 @@ func assertContextPackOutputMatchesGolden(t *testing.T, report *ContextPackRepor
 		}
 		t.Fatalf("read golden fixture %s: %v", goldenPath, err)
 	}
-	if strings.TrimSpace(string(actual)) != strings.TrimSpace(string(golden)) {
+	if normalizeContextPackOutputForGoldenCompare(string(actual)) != normalizeContextPackOutputForGoldenCompare(string(golden)) {
 		t.Fatalf("output mismatch for %s\nexpected:\n%s\nactual:\n%s", goldenPath, string(golden), string(actual))
 	}
+}
+
+func normalizeContextPackOutputForGoldenCompare(content string) string {
+	normalized := strings.ReplaceAll(content, "\r\n", "\n")
+	normalized = strings.ReplaceAll(normalized, "\r", "\n")
+	return strings.TrimSpace(normalized)
 }
 
 func assertContextPackWarningPresent(t *testing.T, warnings []ContextPackAdvisory, code string, threshold int64) {

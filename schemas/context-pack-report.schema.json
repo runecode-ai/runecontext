@@ -68,10 +68,12 @@
             "type": "string"
           },
           "value": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 0
           },
           "threshold": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 0
           }
         }
       }

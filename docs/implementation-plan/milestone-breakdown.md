@@ -744,6 +744,9 @@ RuneCode integration.
 - [ ] Issue: document that the report schema validates the envelope while the
   embedded `pack` payload still requires separate validation against
   `context-pack.schema.json` when consumers need full contract enforcement.
+- [ ] Issue: keep report warning counters (`value`, `threshold`) non-negative at
+  schema level so machine-output contracts fail closed on impossible advisory
+  payloads.
 - [ ] Issue: implement `--explain`-style provenance output for include/exclude
   decisions using the persisted selector detail from Branch Cut 1.
 - [ ] Issue: compare rebuild stability using canonicalized explanation content
@@ -773,6 +776,8 @@ RuneCode integration.
   fail closed when future type drift appears.
 - [ ] Issue: add tests for changed-file fail-closed behavior between
   enumeration, hashing, and delivery preparation.
+- [ ] Issue: make test read-hook helpers nil-safe so test-only hook misuse does
+  not panic the pack/report build path.
 
 ### Recommended Branch Cut 3: Promotion assessment on close
 

@@ -138,6 +138,9 @@ func currentContextPackReadProjectFile() func(boundaryPath, path string) ([]byte
 	contextPackReadProjectFileMu.RLock()
 	reader := contextPackReadProjectFile
 	contextPackReadProjectFileMu.RUnlock()
+	if reader == nil {
+		return readProjectFile
+	}
 	return reader
 }
 

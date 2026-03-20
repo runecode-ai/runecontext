@@ -691,113 +691,113 @@ RuneCode integration.
 
 ### Recommended Branch Cut 1: Context-pack engine and determinism fixtures
 
-- [ ] Issue: align the machine-readable context-pack contract artifacts first,
+- [x] Issue: align the machine-readable context-pack contract artifacts first,
   including `schemas/context-pack.schema.json`, related profile docs, and
   shipped fixtures, so the alpha.4 implementation starts from a schema/fixture
   contract that already reflects `requested_bundle_ids`, persisted selector
   `pattern`/`kind`, and the `generated_at` versus canonical-hash rule.
-- [ ] Issue: implement selected and excluded file inventories with per-file
+- [x] Issue: implement selected and excluded file inventories with per-file
   hashes.
-- [ ] Issue: implement compact deterministic provenance for selected and
+- [x] Issue: implement compact deterministic provenance for selected and
   excluded files, persisting `bundle`, `aspect`, `rule`, `pattern`, and `kind`
   while preserving a clean extension path for fuller provenance receipts in
   Verified mode.
-- [ ] Issue: implement hybrid pack-request identity so generated packs can carry
+- [x] Issue: implement hybrid pack-request identity so generated packs can carry
   ordered `requested_bundle_ids` separately from resolved bundle linearization,
   while normal authored workflows still prefer one top-level bundle or an
   authored composite bundle.
-- [ ] Issue: implement source metadata capture inside the context pack,
+- [x] Issue: implement source metadata capture inside the context pack,
   including resolved commit and signed-tag verification posture.
-- [ ] Issue: implement required `generated_at` emission together with top-level
+- [x] Issue: implement required `generated_at` emission together with top-level
   pack hashing over the canonicalized resolved pack, excluding both
   `pack_hash` and `generated_at` from the hash input.
-- [ ] Issue: harden canonical pack hashing with RFC 8785-compatible string and
+- [x] Issue: harden canonical pack hashing with RFC 8785-compatible string and
   key-order behavior for the emitted pack shapes, or else lock the pack schema
   to an explicit RuneContext-owned canonicalization token with matching tests
   and documentation.
-- [ ] Issue: make the restricted canonicalization profile reject invalid UTF-8
+- [x] Issue: make the restricted canonicalization profile reject invalid UTF-8
   string content explicitly so pack hashing never silently rewrites malformed
   machine-readable values during canonicalization.
-- [ ] Issue: normalize text line endings before per-file hashing so deterministic
+- [x] Issue: normalize text line endings before per-file hashing so deterministic
   pack output survives LF/CRLF checkout differences.
-- [ ] Issue: reject sub-second `generated_at` inputs and non-portable local
+- [x] Issue: reject sub-second `generated_at` inputs and non-portable local
   `source_ref` traversal forms at the core pack-builder boundary.
-- [ ] Issue: align generated context-pack bundle-ID validation with the authored
+- [x] Issue: align generated context-pack bundle-ID validation with the authored
   bundle-ID grammar, and keep reject fixtures specific enough that unknown-field
   failures are not masked by unrelated missing required fields.
-- [ ] Issue: implement stable ordering rules for all generated pack content.
-- [ ] Issue: add golden fixtures for resolved context packs, selected/excluded
+- [x] Issue: implement stable ordering rules for all generated pack content.
+- [x] Issue: add golden fixtures for resolved context packs, selected/excluded
   provenance, and top-level pack hashes.
-- [ ] Issue: add clean-machine parity tests showing that CLI and library pack
+- [x] Issue: add clean-machine parity tests showing that CLI and library pack
   generation stay deterministic without relying on host caches, home-directory
   state, or other hidden local metadata.
-- [ ] Issue: add negative tests for invalid bundle requests, non-portable local
+- [x] Issue: add negative tests for invalid bundle requests, non-portable local
   source references, missing selector provenance, and hashing failures so pack
   errors stay explicit and reviewable.
 
 ### Recommended Branch Cut 2: Pack explanation, thresholds, and fail-closed rebuild behavior
 
-- [ ] Issue: implement human-readable and machine-readable pack output modes.
-- [ ] Issue: give machine-readable pack reports an explicit schema version and
+- [x] Issue: implement human-readable and machine-readable pack output modes.
+- [x] Issue: give machine-readable pack reports an explicit schema version and
   standalone schema contract so RuneCode and other automation consumers can
   validate them independently of the embedded pack schema.
-- [ ] Issue: document that the report schema validates the envelope while the
+- [x] Issue: document that the report schema validates the envelope while the
   embedded `pack` payload still requires separate validation against
   `context-pack.schema.json` when consumers need full contract enforcement.
-- [ ] Issue: keep report warning counters (`value`, `threshold`) non-negative at
+- [x] Issue: keep report warning counters (`value`, `threshold`) non-negative at
   schema level so machine-output contracts fail closed on impossible advisory
   payloads.
-- [ ] Issue: implement `--explain`-style provenance output for include/exclude
+- [x] Issue: implement `--explain`-style provenance output for include/exclude
   decisions using the persisted selector detail from Branch Cut 1.
-- [ ] Issue: compare rebuild stability using canonicalized explanation content
+- [x] Issue: compare rebuild stability using canonicalized explanation content
   rather than brittle in-memory deep-struct comparison.
-- [ ] Issue: implement advisory warnings using the design defaults of `256`
+- [x] Issue: implement advisory warnings using the design defaults of `256`
   selected files, `1 MiB` referenced content bytes, and `256 KiB` provenance
   metadata.
-- [ ] Issue: document and test the threshold API semantics so a fully zero-valued
+- [x] Issue: document and test the threshold API semantics so a fully zero-valued
   threshold struct means "use defaults", explicit zero fields remain valid once
   any field is set, and negative values opt back into per-field defaults.
-- [ ] Issue: expose advisory-threshold defaults through copy-returning APIs or
+- [x] Issue: expose advisory-threshold defaults through copy-returning APIs or
   equivalent immutable contracts rather than mutable exported global structs.
-- [ ] Issue: keep pack-only construction and enriched report construction as
+- [x] Issue: keep pack-only construction and enriched report construction as
   separable flows even when they share the same rebuild/fail-closed engine.
-- [ ] Issue: implement fail/rebuild behavior when files change between
+- [x] Issue: implement fail/rebuild behavior when files change between
   enumeration, hashing, and delivery preparation.
-- [ ] Issue: propagate non-transient digest/read failures during rebuild
+- [x] Issue: propagate non-transient digest/read failures during rebuild
   stability checks instead of collapsing them into a generic "inputs changed"
   retry outcome.
-- [ ] Issue: document that rebuild stability is evaluated against the loaded
+- [x] Issue: document that rebuild stability is evaluated against the loaded
   project snapshot and selected-file content; bundle-definition reloads are not
   performed mid-build unless a later milestone explicitly broadens that scope.
-- [ ] Issue: add regression tests for advisory-size and provenance-threshold
+- [x] Issue: add regression tests for advisory-size and provenance-threshold
   warnings using the documented default values.
-- [ ] Issue: add regression tests for unsupported canonical scalar types and
+- [x] Issue: add regression tests for unsupported canonical scalar types and
   machine-report schema validation so the restricted hashing/output contracts
   fail closed when future type drift appears.
-- [ ] Issue: add tests for changed-file fail-closed behavior between
+- [x] Issue: add tests for changed-file fail-closed behavior between
   enumeration, hashing, and delivery preparation.
-- [ ] Issue: make test read-hook helpers nil-safe so test-only hook misuse does
+- [x] Issue: make test read-hook helpers nil-safe so test-only hook misuse does
   not panic the pack/report build path.
 
 ### Recommended Branch Cut 3: Promotion assessment on close
 
-- [ ] Issue: build promotion suggestion behavior on top of the alpha.3
+- [x] Issue: build promotion suggestion behavior on top of the alpha.3
   `promotion_assessment` structure already present in `status.yaml`.
-- [ ] Issue: on `change close`, deterministically record
+- [x] Issue: on `change close`, deterministically record
   `promotion_assessment.status` as either `none` or `suggested`; keep
   `accepted` and `completed` available for later explicit promotion workflows.
-- [ ] Issue: implement reviewable suggested promotion targets for `specs/`,
+- [x] Issue: implement reviewable suggested promotion targets for `specs/`,
   `standards/`, and `decisions/`.
-- [ ] Issue: implement explicit "no promotion needed" recording on close.
-- [ ] Issue: preserve explicitly advanced promotion lifecycle states
+- [x] Issue: implement explicit "no promotion needed" recording on close.
+- [x] Issue: preserve explicitly advanced promotion lifecycle states
   (`accepted`, `completed`) if they already exist, so close-time reassessment
   does not regress later explicit promotion workflow outcomes.
-- [ ] Issue: lock in deterministic promotion-assessment behavior for both
+- [x] Issue: lock in deterministic promotion-assessment behavior for both
   `closed` and `superseded` terminal lifecycle outcomes.
-- [ ] Issue: ensure suggested promotion target paths are emitted from normalized
+- [x] Issue: ensure suggested promotion target paths are emitted from normalized
   traceability references so close-time output stays slash-canonical and
   deterministic across platforms.
-- [ ] Issue: add tests for close-time promotion assessment determinism,
+- [x] Issue: add tests for close-time promotion assessment determinism,
   explicit `none` outcomes, and stable suggested-target formatting.
 
 ### Recommended Branch Cut 4: Generated indexes and manifests

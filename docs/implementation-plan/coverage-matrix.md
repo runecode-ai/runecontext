@@ -249,6 +249,10 @@ plan so it is clear that the planning documents capture the full design.
   promotion states (`accepted`, `completed`) and remain deterministic across
   both `closed` and `superseded` terminal change outcomes.
   - Planned capture: `alpha.4`
+- Decision: close-time suggested promotion target paths are sourced from
+  normalized traceability records so `target_path` values remain canonical and
+  platform-independent.
+  - Planned capture: `alpha.4`
 - Decision: users must be able to use embedded or dedicated-repo storage.
   - Planned capture: `alpha.2`, `alpha.8`
 - Decision: bundle rules and generated inventories use consistent

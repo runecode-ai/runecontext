@@ -98,11 +98,10 @@ func preservePromotionAssessmentState(raw any) bool {
 }
 
 func closePromotionTargets(updated map[string]any, record *ChangeRecord) []any {
-	// Specs and decisions are sourced from status.yaml traceability fields, while
-	// standards suggestions come from standards.md references loaded into the
-	// change record.
+	// Specs and decisions are sourced from normalized traceability refs on the
+	// change record, while standards suggestions come from standards.md refs.
 	targets := make([]any, 0)
-	for _, path := range sortedUniqueStrings(extractStringList(updated["related_specs"])) {
+	for _, path := range sortedUniqueStrings(record.RelatedSpecs) {
 		targets = append(targets, map[string]any{
 			"target_type": "spec",
 			"target_path": path,
@@ -118,7 +117,7 @@ func closePromotionTargets(updated map[string]any, record *ChangeRecord) []any {
 			})
 		}
 	}
-	for _, path := range sortedUniqueStrings(extractStringList(updated["related_decisions"])) {
+	for _, path := range sortedUniqueStrings(record.RelatedDecisions) {
 		targets = append(targets, map[string]any{
 			"target_type": "decision",
 			"target_path": path,

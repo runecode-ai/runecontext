@@ -350,6 +350,12 @@ func TestCloseChangePreservesCompletedPromotionAssessment(t *testing.T) {
 func rewritePromotionAssessmentStatus(t *testing.T, statusPath, status string) {
 	t.Helper()
 	rewriteFile(t, statusPath, func(text string) string {
-		return strings.Replace(text, "promotion_assessment:\n  status: pending\n  suggested_targets: []", "promotion_assessment:\n  status: "+status+"\n  suggested_targets: []", 1)
+		oldBlock := "promotion_assessment:\n  status: pending\n  suggested_targets: []"
+		newBlock := "promotion_assessment:\n  status: " + status + "\n  suggested_targets: []"
+		replaced := strings.Replace(text, oldBlock, newBlock, 1)
+		if replaced == text {
+			t.Fatalf("rewritePromotionAssessmentStatus: expected promotion assessment block in %s", statusPath)
+		}
+		return replaced
 	})
 }

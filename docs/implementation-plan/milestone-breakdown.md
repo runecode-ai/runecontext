@@ -794,6 +794,9 @@ RuneCode integration.
   does not regress later explicit promotion workflow outcomes.
 - [ ] Issue: lock in deterministic promotion-assessment behavior for both
   `closed` and `superseded` terminal lifecycle outcomes.
+- [ ] Issue: ensure suggested promotion target paths are emitted from normalized
+  traceability references so close-time output stays slash-canonical and
+  deterministic across platforms.
 - [ ] Issue: add tests for close-time promotion assessment determinism,
   explicit `none` outcomes, and stable suggested-target formatting.
 

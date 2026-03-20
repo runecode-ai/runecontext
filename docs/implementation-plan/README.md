@@ -171,6 +171,10 @@ and coverage stay in one place.
   assessment must not regress existing `accepted`/`completed` states, and that
   close behavior for both `closed` and `superseded` lifecycle outcomes remains
   deterministic and reviewable.
+- The same Branch Cut 3 hardening also requires close-time suggested
+  `target_path` values to be emitted from already-normalized traceability
+  records, so platform-specific separators cannot leak into
+  `promotion_assessment.suggested_targets` output.
 - Branch Cut 1 hardening also clarifies that the core pack builder requires an
   explicit whole-second `generated_at`, path-mode `source_ref` values must stay
   portable, LF/CRLF text checkouts hash identically, and the emitted pack

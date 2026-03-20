@@ -69,7 +69,7 @@
           },
           "type": {
             "type": "string",
-            "pattern": "^(project|feature|bug|standard|chore|x-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)$"
+            "pattern": "^(project|feature|bug|standard|chore|x-.+)$"
           },
           "size": {
             "type": "string",

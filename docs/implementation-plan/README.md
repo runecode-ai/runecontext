@@ -176,6 +176,12 @@ and coverage stay in one place.
   patterns to reject traversal (`..`), hidden (`.`-prefixed), and empty
   segments so external tooling can validate generated artifacts against a
   stricter fail-closed path contract.
+- That same Branch Cut 4 follow-up keeps the generated `changes-by-status`
+  schema aligned with `change-status.schema.json` so the custom `x-` type
+  allowance stays deterministic with the existing lifecycle semantics.
+- That same follow-up also orders generated writes so the change and bundle
+  indexes land before `manifest.yaml`, preventing partial manifest updates
+  from leaving downstream tooling with inconsistent state.
 - Branch Cut 3 follow-up hardening further specifies that close-time promotion
   assessment must not regress existing `accepted`/`completed` states, and that
   close behavior for both `closed` and `superseded` lifecycle outcomes remains

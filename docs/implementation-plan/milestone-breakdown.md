@@ -821,6 +821,12 @@ RuneCode integration.
 - [x] Issue: tighten manifest and bundle-index path patterns to reject
   traversal, hidden, and empty path segments so external tooling can
   validate generated artifacts against a fail-closed path contract.
+- [x] Issue: keep the generated `changes-by-status` schema aligned with
+  `change-status.schema.json` so the lifecycle-typed `x-` prefix convention
+  stays deterministic across schema and generator contracts.
+- [x] Issue: persist the generation-order guarantee where `changes-by-status`
+  and `bundles` indexes land before `manifest.yaml`, ensuring partial failures
+  cannot leave the manifest pointing at missing indexes.
 
 ### Exit Criteria
 

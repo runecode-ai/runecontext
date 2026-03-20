@@ -30,13 +30,13 @@ func (p *ProjectIndex) WriteGeneratedIndexes() error {
 	if err := os.MkdirAll(indexDir, 0o755); err != nil {
 		return err
 	}
-	if err := writeGeneratedYAML(filepath.Join(p.ContentRoot, filepath.FromSlash(generatedManifestRelativePath)), manifest); err != nil {
-		return err
-	}
 	if err := writeGeneratedYAML(filepath.Join(p.ContentRoot, filepath.FromSlash(generatedChangesIndexRelativePath)), changesByStatus); err != nil {
 		return err
 	}
 	if err := writeGeneratedYAML(filepath.Join(p.ContentRoot, filepath.FromSlash(generatedBundlesIndexRelativePath)), bundles); err != nil {
+		return err
+	}
+	if err := writeGeneratedYAML(filepath.Join(p.ContentRoot, filepath.FromSlash(generatedManifestRelativePath)), manifest); err != nil {
 		return err
 	}
 	return nil

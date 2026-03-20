@@ -802,18 +802,22 @@ RuneCode integration.
 
 ### Recommended Branch Cut 4: Generated indexes and manifests
 
-- [ ] Issue: implement overall `manifest.yaml` generation at
+- [x] Issue: implement overall `manifest.yaml` generation at
   `runecontext/manifest.yaml`.
-- [ ] Issue: implement generated change indexes grouped by lifecycle state at
+- [x] Issue: implement generated change indexes grouped by lifecycle state at
   `runecontext/indexes/changes-by-status.yaml`.
-- [ ] Issue: implement generated bundle inventory views showing parents and
+- [x] Issue: implement generated bundle inventory views showing parents and
   referenced patterns at `runecontext/indexes/bundles.yaml`.
-- [ ] Issue: define closed schemas for `manifest.yaml` and the generated index
+- [x] Issue: define closed schemas for `manifest.yaml` and the generated index
   artifacts so standalone tooling and RuneCode can validate them without
   treating them as source of truth.
-- [ ] Issue: ensure generated indexes use stable ordering and merge-friendly
+- [x] Issue: ensure generated indexes use stable ordering and merge-friendly
   formatting.
-- [ ] Issue: add fixtures for generated manifest and change-index stability.
+- [x] Issue: add fixtures for generated manifest, change-index, and bundle-index
+  stability.
+- [x] Issue: harden generated index builders to fail closed when artifact paths
+  escape the RuneContext content root or when a change carries an unsupported
+  lifecycle status.
 
 ### Exit Criteria
 

@@ -167,6 +167,11 @@ and coverage stay in one place.
   `requested_bundle_ids` model, generated indexes land at fixed optional paths
   with closed schemas, and close-time promotion assessment writes only `none` or
   `suggested` while explicit later workflows own `accepted` and `completed`.
+- A Branch Cut 4 follow-up hardening pass also requires generated-index path
+  emission to fail closed if an artifact path escapes the RuneContext content
+  root, requires unknown lifecycle statuses to fail loudly during
+  `changes-by-status` generation, and locks bundle-index determinism plus
+  closed-schema unknown-field rejection under dedicated tests.
 - Branch Cut 3 follow-up hardening further specifies that close-time promotion
   assessment must not regress existing `accepted`/`completed` states, and that
   close behavior for both `closed` and `superseded` lifecycle outcomes remains

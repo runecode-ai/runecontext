@@ -231,8 +231,11 @@
 - [ ] Change close deterministically records promotion assessment as `none` or
   `suggested`, while later workflows may advance reviewable promotions to
   `accepted` and `completed`.
-- [ ] Generated indexes/manifests exist at standard optional paths and remain
+- [x] Generated indexes/manifests exist at standard optional paths and remain
   regenerable rather than becoming the source of truth.
+- [x] Generated index builders fail closed when emitted artifact paths would
+  escape the RuneContext content root or when a change lifecycle status falls
+  outside the supported generated-index grouping contract.
 
 ## 5. CLI And Machine Interface
 

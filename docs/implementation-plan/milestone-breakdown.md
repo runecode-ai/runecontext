@@ -12,7 +12,7 @@ decomposes each milestone into epics and issue-sized work items.
 - The milestone sequence assumes core semantics land before CLI/adapter UX and
   release hardening.
 
-## `v0.1.0-alpha.1` - Core Model And Contracts
+## `v0.1.0-alpha.1` - Core Model And Contracts - COMPLETED
 
 Primary outcome: freeze the portable RuneContext source model and the contracts
 that all later CLI, adapters, and RuneCode integration must share.
@@ -53,8 +53,9 @@ that all later CLI, adapters, and RuneCode integration must share.
 - [x] Issue: codify the restricted machine-readable YAML profile with no anchors,
   aliases, duplicate keys, or custom tags; UTF-8 only; normalized formatting.
 - [x] Issue: define the canonical JSON data model for hashing derived from YAML.
-- [x] Issue: codify RFC 8785 JCS as the canonical hashing serialization; SHA256 for hash
-  algorithm.
+- [x] Issue: codify canonical hashing serialization rules; SHA256 for the hash
+  algorithm, with later alpha.4 refinement for the context-pack-specific
+  `runecontext-canonical-json-v1` token.
 - [x] Issue: standardize on JSON Schema Draft 2020-12 so conditional variants can remain closed without reopening the core contracts.
 - [x] Issue: define unknown-field behavior: closed schemas by default; unknown
   `schema_version` fails closed; optional `extensions` object (owner.name namespaces,
@@ -132,6 +133,7 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
 - The alpha.1 validation entrypoint emits stable one-line `key=value` fields for
   success, invalid, and usage-error outcomes so CI and scripts can consume it
   before broader machine-facing flags land.
+
 - Whole-project validation now covers required change markdown files,
   `runecontext/bundles/*.yaml`, extension opt-in enforcement, and restricted YAML
   tag rejection without panic-based failure paths.
@@ -142,6 +144,29 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
   for standard tooling.
 - Future alphas can build without reopening naming or ownership decisions.
 
+### Historical Implementation Notes
+
+- Alpha.1 delivered the schema/file-contract baseline through four core
+  schemas, the contract/profile references in `schemas/`, and the initial
+  shipped fixture taxonomy for standalone schema validation, project-level
+  extension checks, and restricted YAML-profile rejection cases.
+- The security-first baseline from that work remains the foundation for the MVP:
+  closed schemas by default, explicit opt-in extensions for authored artifacts
+  only, policy-neutral semantics, and deterministic generated artifacts.
+- Later hardening passes folded back into the same baseline included embedded-
+  root and whole-project symlink containment, explicit git transport guards,
+  bundle traversal bounds, defensive-copy bundle results, synchronized schema
+  compilation caching, safer bundle-file reads, and clearer resolved-path
+  diagnostics.
+- Additional follow-up fixes also refined markdown duplicate-heading fragments,
+  thin CLI required-flag parsing, bundle traversal fail-closed behavior, and
+  `status.yaml` rewrite error propagation.
+- Alpha.4 then refined the original context-pack hashing contract further by
+  moving to the explicit `runecontext-canonical-json-v1` token, requiring
+  whole-second caller-supplied `generated_at`, normalizing UTF-8 text line
+  endings before file hashing, and tightening portable `source_ref` rules for
+  path-mode packs.
+
 ### RuneCode Companion-Track Checkpoints
 
 - RuneCode can start version-gating against the root `runecontext.yaml`
@@ -150,7 +175,7 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
   granting it runtime authority.
 - RuneCode can begin fixture-based validation of policy-neutrality assumptions.
 
-## `v0.1.0-alpha.2` - Source Resolution And Bundle Engine
+## `v0.1.0-alpha.2` - Source Resolution And Bundle Engine - COMPLETED
 
 Primary outcome: make storage modes and bundle semantics deterministic,
 auditable, and safe for future local/remote parity.
@@ -310,7 +335,7 @@ auditable, and safe for future local/remote parity.
 - RuneCode can confirm local and remote resolution produce the same selected
   file set from the same inputs.
 
-## `v0.1.0-alpha.3` - Change Workflow, Standards, And Traceability
+## `v0.1.0-alpha.3` - Change Workflow, Standards, And Traceability - COMPLETED
 
 Primary outcome: make RuneContext usable as a change-oriented workflow system
 with stable IDs, lightweight shaping, and reviewable standards linkage.
@@ -612,6 +637,13 @@ RuneCode integration.
   auditability, but it must stay outside the canonical `pack_hash` input so
   regenerating the same resolved content at a different time does not change the
   hash.
+- Core context-pack builders should require an explicit `generated_at` input
+  rather than silently defaulting to wall-clock time; if a CLI wants a default,
+  that policy should live at the command boundary instead of the canonical pack
+  engine.
+- Core context-pack builders should also reject sub-second `generated_at`
+  precision rather than silently truncating it so the timestamp contract stays
+  explicit and reviewable.
 - Alpha.4 should refine the persisted context-pack provenance shape so selected
   and excluded entries retain enough selector detail for explanation and future
   Verified receipts: `bundle`, `aspect`, `rule`, `pattern`, and `kind`.
@@ -629,6 +661,24 @@ RuneCode integration.
   on-demand or ephemeral; future runtime systems may bind to `pack_hash`
   without requiring context packs themselves or high-frequency runtime evidence
   dumps to live in git.
+- Alpha.4 context packs should advertise an explicit restricted canonicalization
+  token rather than claiming full RFC 8785 JCS interoperability; the emitted
+  pack profile should stay narrow, deterministic, and well-tested for the actual
+  value shapes RuneContext writes.
+- That restricted canonicalization profile should still carry dedicated tests for
+  key ordering, control-character escaping, Unicode preservation, and
+  HTML-sensitive characters such as `<`, `>`, and `&`.
+- The same profile should also fail closed on invalid UTF-8 string content
+  instead of silently normalizing it during canonicalization.
+- Selected-file hashing should normalize text line endings before hashing so LF
+  and CRLF checkouts of the same logical content still yield the same
+  deterministic pack output across clean machines and operating systems.
+- Portable path-source `source_ref` values should reject absolute, UNC,
+  drive-qualified, and traversal-like path forms so persisted packs keep a clear
+  cross-machine contract.
+- Generated context-pack bundle identifiers should fail closed against the same
+  lowercase-alphanumeric-plus-hyphen ID grammar used by authored bundle
+  contracts, rather than accepting arbitrary non-whitespace strings.
 - Generated indexes should standardize on `runecontext/manifest.yaml`,
   `runecontext/indexes/changes-by-status.yaml`, and
   `runecontext/indexes/bundles.yaml`, each using a closed schema, stable
@@ -660,12 +710,29 @@ RuneCode integration.
 - [ ] Issue: implement required `generated_at` emission together with top-level
   pack hashing over the canonicalized resolved pack, excluding both
   `pack_hash` and `generated_at` from the hash input.
+- [ ] Issue: harden canonical pack hashing with RFC 8785-compatible string and
+  key-order behavior for the emitted pack shapes, or else lock the pack schema
+  to an explicit RuneContext-owned canonicalization token with matching tests
+  and documentation.
+- [ ] Issue: make the restricted canonicalization profile reject invalid UTF-8
+  string content explicitly so pack hashing never silently rewrites malformed
+  machine-readable values during canonicalization.
+- [ ] Issue: normalize text line endings before per-file hashing so deterministic
+  pack output survives LF/CRLF checkout differences.
+- [ ] Issue: reject sub-second `generated_at` inputs and non-portable local
+  `source_ref` traversal forms at the core pack-builder boundary.
+- [ ] Issue: align generated context-pack bundle-ID validation with the authored
+  bundle-ID grammar, and keep reject fixtures specific enough that unknown-field
+  failures are not masked by unrelated missing required fields.
 - [ ] Issue: implement stable ordering rules for all generated pack content.
 - [ ] Issue: add golden fixtures for resolved context packs, selected/excluded
   provenance, and top-level pack hashes.
 - [ ] Issue: add clean-machine parity tests showing that CLI and library pack
   generation stay deterministic without relying on host caches, home-directory
   state, or other hidden local metadata.
+- [ ] Issue: add negative tests for invalid bundle requests, non-portable local
+  source references, missing selector provenance, and hashing failures so pack
+  errors stay explicit and reviewable.
 
 ### Recommended Branch Cut 2: Pack explanation, thresholds, and fail-closed rebuild behavior
 

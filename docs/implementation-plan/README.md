@@ -68,6 +68,25 @@ Signed-tag verification is intentionally part of the MVP and is planned across
 inputs rather than hidden machine-global trust state), `alpha.4` (context-pack
 provenance fields), and `alpha.8` (release/reference-project validation).
 
+## Alpha.1 Foundation Recap
+
+The old one-off Epic 2 implementation summary has been folded back into the main
+plan documents. The enduring alpha.1 baseline is:
+
+- four core machine-readable schemas: `runecontext.yaml`, `bundles/*.yaml`,
+  `changes/*/status.yaml`, and `context-pack.yaml`
+- closed-schema defaults with explicit opt-in `extensions` for authored files
+  and no extensions in generated artifacts
+- JSON Schema Draft 2020-12 as the standard dialect for shipped contracts
+- the restricted machine-readable YAML profile plus markdown structure contracts
+  for `proposal.md` and `standards.md`
+- shipped schema/profile fixtures covering standalone validation,
+  project-level extension policy, and YAML-profile rejection cases
+
+Later review hardening for alpha.2-alpha.4 is also tracked directly in the main
+plan now rather than in per-epic recap files, so milestone history, acceptance,
+and coverage stay in one place.
+
 ## Dogfooding Guidance
 
 - `alpha.3` is the planned point where this repository should be able to start
@@ -147,6 +166,11 @@ provenance fields), and `alpha.8` (release/reference-project validation).
   `requested_bundle_ids` model, generated indexes land at fixed optional paths
   with closed schemas, and close-time promotion assessment writes only `none` or
   `suggested` while explicit later workflows own `accepted` and `completed`.
+- Branch Cut 1 hardening also clarifies that the core pack builder requires an
+  explicit whole-second `generated_at`, path-mode `source_ref` values must stay
+  portable, LF/CRLF text checkouts hash identically, and the emitted pack
+  canonicalization token is RuneContext-owned rather than an overclaimed full
+  RFC 8785 label.
 - The recommended alpha.4 review order is pack engine and determinism fixtures,
   then pack explanation and limits, then promotion assessment, and finally
   generated indexes/manifests.

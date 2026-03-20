@@ -55,9 +55,6 @@ func leaveBundleWalk(state *bundleWalkState) { state.depth-- }
 func resolveBundleWalkPath(logicalPath string) (string, error) {
 	resolvedPath, err := filepath.EvalSymlinks(logicalPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return "", nil
-		}
 		return "", err
 	}
 	return resolvedPath, nil

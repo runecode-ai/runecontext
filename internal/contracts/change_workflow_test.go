@@ -282,7 +282,18 @@ func TestExtractMarkdownHeadingFragmentsAvoidsNaturalSuffixCollisions(t *testing
 	if err != nil {
 		t.Fatalf("extract heading fragments: %v", err)
 	}
-	expected := map[string]string{"foo": "Foo", "foo-3": "Foo", "foo-2": "Foo 2"}
+	expected := map[string]string{"foo": "Foo", "foo-1": "Foo", "foo-2": "Foo 2"}
+	if !reflect.DeepEqual(headings, expected) {
+		t.Fatalf("unexpected heading fragments: %#v", headings)
+	}
+}
+
+func TestExtractMarkdownHeadingFragmentsSkipsOccupiedSuffixes(t *testing.T) {
+	headings, err := extractMarkdownHeadingFragments("# Foo\n# Foo 1\n# Foo\n")
+	if err != nil {
+		t.Fatalf("extract heading fragments: %v", err)
+	}
+	expected := map[string]string{"foo": "Foo", "foo-1": "Foo 1", "foo-2": "Foo"}
 	if !reflect.DeepEqual(headings, expected) {
 		t.Fatalf("unexpected heading fragments: %#v", headings)
 	}

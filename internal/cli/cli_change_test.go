@@ -162,6 +162,19 @@ func TestRunChangeReallocateUsageErrors(t *testing.T) {
 	}
 }
 
+func TestRunChangeNewRejectsMissingValueBeforeNextFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	code := Run([]string{"change", "new", "--title", "--type", "feature"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code for missing title value, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "--title requires a value") {
+		t.Fatalf("expected missing-value output, got %q", stderr.String())
+	}
+}
+
 func TestRunStatusOutputsCounts(t *testing.T) {
 	projectRoot := prepareCLIWorkflowProject(t)
 	firstID := runCLIChangeNewForTest(t, projectRoot, "Add cache invalidation")

@@ -205,6 +205,29 @@ func TestBundleResolutionAllowsSymlinkedAspectRootWhenInBounds(t *testing.T) {
 	}
 }
 
+func TestWalkBundleFilesFailsClosedOnBrokenSymlink(t *testing.T) {
+	contentRoot := t.TempDir()
+	aspectRoot := filepath.Join(contentRoot, "standards")
+	if err := os.MkdirAll(aspectRoot, 0o755); err != nil {
+		t.Fatalf("mkdir aspect root: %v", err)
+	}
+	brokenPath := filepath.Join(aspectRoot, "broken.md")
+	if err := tryCreateSymlink("missing.md", brokenPath); err != nil {
+		if strings.Contains(err.Error(), "symlink tests skipped") {
+			t.Skip(err.Error())
+		}
+		t.Fatal(err)
+	}
+
+	err := walkBundleFiles(contentRoot, aspectRoot, brokenPath, map[string]struct{}{}, &bundleWalkState{}, func(string) error {
+		t.Fatal("expected broken symlink to fail before visiting")
+		return nil
+	})
+	if err == nil || !os.IsNotExist(err) {
+		t.Fatalf("expected broken symlink traversal to fail closed with not-exist, got %v", err)
+	}
+}
+
 func assertBundleResolutionMatchesGolden(t *testing.T, resolution *BundleResolution, goldenPath string) {
 	t.Helper()
 	if resolution == nil {

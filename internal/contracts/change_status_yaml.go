@@ -3,6 +3,7 @@ package contracts
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"time"
 
@@ -38,14 +39,24 @@ func renderStatusYAML(raw map[string]any) ([]byte, error) {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	encoder := yaml.NewEncoder(&buf)
-	encoder.SetIndent(2)
-	err = encoder.Encode(doc)
-	_ = encoder.Close()
-	if err != nil {
+	if err := encodeYAMLDocument(&buf, doc); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func encodeYAMLDocument(dst io.Writer, doc any) error {
+	encoder := yaml.NewEncoder(dst)
+	encoder.SetIndent(2)
+	encodeErr := encoder.Encode(doc)
+	closeErr := encoder.Close()
+	if encodeErr != nil {
+		return encodeErr
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	return nil
 }
 
 func statusDocumentFromMap(raw map[string]any) (statusDocument, error) {

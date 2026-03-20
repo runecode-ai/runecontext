@@ -107,6 +107,9 @@ func requireFlagValue(args []string, index int, flag string) (string, int, error
 	if value == "" {
 		return "", index, fmt.Errorf("%s requires a value", flag)
 	}
+	if strings.HasPrefix(value, "--") {
+		return "", index, fmt.Errorf("%s requires a value", flag)
+	}
 	return value, index + 1, nil
 }
 

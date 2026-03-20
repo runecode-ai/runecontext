@@ -57,14 +57,14 @@ func markdownHeadingLevel(trimmed string) int {
 func allocateHeadingFragment(heading string, headings map[string]string, counts map[string]int) string {
 	base := slugifyHeadingFragment(heading)
 	if _, exists := headings[base]; !exists {
-		counts[base] = 1
+		counts[base] = 0
 		return base
 	}
-	next := counts[base] + 2
+	next := counts[base] + 1
 	for {
 		fragment := fmt.Sprintf("%s-%d", base, next)
 		if _, exists := headings[fragment]; !exists {
-			counts[base] = next - 1
+			counts[base] = next
 			return fragment
 		}
 		next++

@@ -68,6 +68,25 @@ Signed-tag verification is intentionally part of the MVP and is planned across
 inputs rather than hidden machine-global trust state), `alpha.4` (context-pack
 provenance fields), and `alpha.8` (release/reference-project validation).
 
+## Alpha.1 Foundation Recap
+
+The old one-off Epic 2 implementation summary has been folded back into the main
+plan documents. The enduring alpha.1 baseline is:
+
+- four core machine-readable schemas: `runecontext.yaml`, `bundles/*.yaml`,
+  `changes/*/status.yaml`, and `context-pack.yaml`
+- closed-schema defaults with explicit opt-in `extensions` for authored files
+  and no extensions in generated artifacts
+- JSON Schema Draft 2020-12 as the standard dialect for shipped contracts
+- the restricted machine-readable YAML profile plus markdown structure contracts
+  for `proposal.md` and `standards.md`
+- shipped schema/profile fixtures covering standalone validation,
+  project-level extension policy, and YAML-profile rejection cases
+
+Later review hardening for alpha.2-alpha.4 is also tracked directly in the main
+plan now rather than in per-epic recap files, so milestone history, acceptance,
+and coverage stay in one place.
+
 ## Dogfooding Guidance
 
 - `alpha.3` is the planned point where this repository should be able to start

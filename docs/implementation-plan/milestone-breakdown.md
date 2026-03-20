@@ -133,6 +133,7 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
 - The alpha.1 validation entrypoint emits stable one-line `key=value` fields for
   success, invalid, and usage-error outcomes so CI and scripts can consume it
   before broader machine-facing flags land.
+
 - Whole-project validation now covers required change markdown files,
   `runecontext/bundles/*.yaml`, extension opt-in enforcement, and restricted YAML
   tag rejection without panic-based failure paths.
@@ -142,6 +143,29 @@ Completed as part of Epic 2 (consolidated with schema contracts for better audit
   matches the documented `v0.1.0-alpha.1` train, and Go module metadata is valid
   for standard tooling.
 - Future alphas can build without reopening naming or ownership decisions.
+
+### Historical Implementation Notes
+
+- Alpha.1 delivered the schema/file-contract baseline through four core
+  schemas, the contract/profile references in `schemas/`, and the initial
+  shipped fixture taxonomy for standalone schema validation, project-level
+  extension checks, and restricted YAML-profile rejection cases.
+- The security-first baseline from that work remains the foundation for the MVP:
+  closed schemas by default, explicit opt-in extensions for authored artifacts
+  only, policy-neutral semantics, and deterministic generated artifacts.
+- Later hardening passes folded back into the same baseline included embedded-
+  root and whole-project symlink containment, explicit git transport guards,
+  bundle traversal bounds, defensive-copy bundle results, synchronized schema
+  compilation caching, safer bundle-file reads, and clearer resolved-path
+  diagnostics.
+- Additional follow-up fixes also refined markdown duplicate-heading fragments,
+  thin CLI required-flag parsing, bundle traversal fail-closed behavior, and
+  `status.yaml` rewrite error propagation.
+- Alpha.4 then refined the original context-pack hashing contract further by
+  moving to the explicit `runecontext-canonical-json-v1` token, requiring
+  whole-second caller-supplied `generated_at`, normalizing UTF-8 text line
+  endings before file hashing, and tightening portable `source_ref` rules for
+  path-mode packs.
 
 ### RuneCode Companion-Track Checkpoints
 

@@ -115,18 +115,26 @@ func cloneWalkEntry(state *snapshotState, limits snapshotLimits, root, absRoot, 
 	}
 	targetPath := filepath.Join(targetRoot, relPath)
 	if d.IsDir() {
-		return cloneDirectoryEntry(relPath, d, targetPath)
+		return cloneDirectoryEntry(relPath, d, targetPath, limits)
 	}
 	return cloneFileEntry(state, limits, absRoot, path, targetPath)
 }
 
-func cloneDirectoryEntry(relPath string, d fs.DirEntry, targetPath string) error {
+func cloneDirectoryEntry(relPath string, d fs.DirEntry, targetPath string, limits snapshotLimits) error {
 	info, err := d.Info()
 	if err != nil {
 		return err
 	}
-	if relPath != "." && shouldSkipDirForDryRun(filepath.Base(relPath)) {
-		return filepath.SkipDir
+	if relPath != "." {
+		if limits.Excludes != nil {
+			if _, ok := limits.Excludes[filepath.Base(relPath)]; ok {
+				return filepath.SkipDir
+			}
+		} else {
+			if shouldSkipDirForDryRun(filepath.Base(relPath)) {
+				return filepath.SkipDir
+			}
+		}
 	}
 	return os.MkdirAll(targetPath, info.Mode().Perm())
 }

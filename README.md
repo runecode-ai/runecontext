@@ -122,7 +122,7 @@ Current CLI scope:
   - closes or supersedes a change without moving it off its stable path
 - `runectx change reallocate CHANGE_ID [--path PATH]`
   - reallocates a rare colliding change ID before merge and rewrites only local in-change references
-- The current thin commands emit stable line-oriented `key=value` output for automation before broader `--json` support lands.
+- The current CLI commands emit stable line-oriented `key=value` output by default and support a shared machine-facing `--json` envelope for automation.
 
 If you only want a quick in-tree hack loop from this checkout, `go run` still works:
 

@@ -273,7 +273,7 @@ func TestRunValidateUsage(t *testing.T) {
 	if !strings.Contains(stderr.String(), "result=usage_error") {
 		t.Fatalf("expected usage result output, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "usage=runectx validate [--ssh-allowed-signers PATH] [path]") {
+	if !strings.Contains(stderr.String(), "usage=runectx validate [--json] [--non-interactive] [--explain] [--ssh-allowed-signers PATH] [path]") {
 		t.Fatalf("expected usage output, got %q", stderr.String())
 	}
 }

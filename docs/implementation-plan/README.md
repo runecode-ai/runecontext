@@ -285,6 +285,11 @@ and coverage stay in one place.
   explicit candidate data rather than hidden session state.
 - Keep alpha.5 `runectx init` local-first; network-enabled init/update
   hardening remains alpha.8 work.
+- Keep completion and autocomplete metadata derived from the same stable CLI
+  command/flag/value definitions rather than maintaining a second hand-authored
+  command model.
+- Keep repo-aware suggestions read-only, nearest-root-aware, and resilient when
+  the current directory is not a RuneContext project.
 - Keep write-command `--dry-run` behavior centered on simulating planned
   mutations and validating the resulting would-be project state rather than
   emitting prose-only intent.
@@ -355,6 +360,10 @@ until the end.
   with the same core semantics.
 - Add adapter tests ensuring that mutations to authoritative RuneContext files
   automatically trigger `runectx validate` and surface failures immediately.
+- Add golden tests for generated Bash, Zsh, and Fish completion scripts and
+  parity tests proving the completion metadata matches the actual CLI surface.
+- Add fixture tests for repo-aware suggestions so dynamic completion stays
+  correct across embedded, linked, monorepo, and out-of-project cases.
 - Add clean-machine and no-hidden-state parity tests showing that portable
   outputs stay correct when home-directory state, caches, or other non-declared
   local tool state are absent.

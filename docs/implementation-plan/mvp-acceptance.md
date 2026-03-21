@@ -248,6 +248,9 @@
 - [ ] The secondary/admin commands exist: `validate`, `doctor`,
   `standard discover`, `promote`, `assurance enable verified`, and
   `assurance backfill`.
+- [ ] `status`, `validate`, and `doctor` have distinct stable responsibilities:
+  workflow summary, authoritative contract enforcement, and
+  environment/install/source-posture diagnosis.
 - [ ] Before alpha.5 is complete, any earlier validation entrypoints remain narrow
   wrappers around the same core contracts rather than alternate semantics.
 - [x] Before alpha.5 is complete, any earlier `status`, `change new`,
@@ -270,6 +273,17 @@
   network.
 - [ ] Machine-facing flags exist and behave consistently: `--json`,
   `--non-interactive`, `--dry-run`, and `--explain`.
+- [ ] Machine-facing JSON output uses one documented envelope and failure
+  taxonomy across commands rather than drifting command by command.
+- [ ] Write-command `--dry-run` behavior simulates planned mutations and
+  validates the resulting would-be project state without persisting files.
+- [ ] `runectx init` covers repo-local embedded/linked scaffolding in alpha.5,
+  while network-enabled init/update hardening remains deferred to alpha.8.
+- [ ] `runectx standard discover` is advisory-only; interactive runs may chain
+  into `promote` only after explicit confirmation, while `--non-interactive`
+  discovery emits reusable candidate data and exits without mutation.
+- [ ] `runectx promote` is the only CLI surface that advances promotion state to
+  `accepted` and `completed` and writes durable target updates.
 - [ ] CLI behavior stays aligned with the canonical file model.
 
 ## 6. Assurance

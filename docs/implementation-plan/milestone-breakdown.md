@@ -872,62 +872,107 @@ dogfooding across this repository and other repositories.
 - `alpha.3` may already expose thin `status` and change write wrappers. This
   milestone broadens those commands into the stable universal CLI contract
   rather than redefining their semantics.
-- `runectx init` should land here as the repo-local scaffolding and command-UX
-  front door for embedded and linked workflows, while alpha.8 keeps the
-  release/install hardening, network-policy enforcement, and end-to-end
-  reference-fixture coverage for network-enabled install/update behavior.
+- Alpha.5 should lock clear command boundaries so later work does not need to
+  refactor the CLI surface: `status` is workflow summary, `validate` is
+  authoritative contract enforcement, and `doctor` is environment/install/
+  source-posture diagnosis.
+- Alpha.5 should standardize one shared machine-facing JSON envelope and
+  failure taxonomy across commands. Earlier line-oriented key/value output can
+  remain as a documented historical thin-contract phase, but broader commands
+  should converge on the same structured contract instead of inventing per-
+  command payload shapes.
+- Write-command `--dry-run` behavior should simulate the planned mutations and
+  validate the resulting would-be project state rather than emitting prose-only
+  intent.
+- `runectx init` should land here as the repo-local, local-first scaffolding
+  and command-UX front door for embedded and linked workflows, while alpha.8
+  keeps the release/install hardening, network-policy enforcement, and end-to-
+  end reference-fixture coverage for network-enabled install/update behavior.
+- `runectx promote` should be the only durable-mutation surface for promotion
+  state. Close-time assessment still settles to `none` or `suggested`; explicit
+  promote workflows own transitions to `accepted` and `completed`.
+- `runectx standard discover` should remain advisory-only. Interactive runs may
+  offer a confirmed handoff into `runectx promote`, but `--non-interactive`
+  must emit reusable candidate data and exit without mutation. That handoff
+  should use explicit candidate data rather than hidden session state.
 - Verified-mode enablement and backfill command surfaces move with the
   underlying assurance implementation in `alpha.6`; alpha.5 should not block
   aggressive Plain-mode dogfooding on those later assurance artifacts.
 
-### Epic 1: Primary commands
+### Epic 1: Recommended Branch Cut 1 / Best Combined Branch
 
-- [ ] Issue: implement `runectx init`.
+- [ ] Issue: define stable exit codes, failure classes, and the shared
+  machine-facing JSON envelope for automation.
+- [ ] Issue: implement `--json` output contracts across machine-facing
+  commands.
+- [ ] Issue: implement `--non-interactive` behavior with clear prompt,
+  inference, and failure rules.
+- [ ] Issue: implement `--dry-run` behavior for write operations by simulating
+  planned mutations and validating the resulting would-be project state.
+- [ ] Issue: implement `--explain` output for resolution, standards selection,
+  and promotion suggestions.
 - [ ] Issue: broaden `runectx status` from its alpha.3 narrow status-reporting
   contract into the stable CLI surface.
 - [ ] Issue: broaden `runectx change new` from its alpha.3 thin wrapper into the
   stable CLI surface.
 - [ ] Issue: broaden `runectx change shape` from its alpha.3 thin wrapper into
   the stable CLI surface.
-- [ ] Issue: implement `runectx bundle resolve`.
 - [ ] Issue: broaden `runectx change close` from its alpha.3 thin wrapper into
   the stable CLI surface.
-
-### Epic 2: Secondary and admin commands
-
 - [ ] Issue: broaden `runectx validate` from the earlier narrow contract into
   the stable CLI surface.
-- [ ] Issue: implement `runectx doctor`.
-- [ ] Issue: implement `runectx standard discover`.
-- [ ] Issue: implement `runectx promote`.
-- [ ] Note: `runectx update` is intentionally deferred to `v0.1.0-alpha.8`
-  alongside release/install hardening.
-
-### Epic 3: Universal machine-facing flags
-
-- [ ] Issue: implement `--json` output contracts across machine-facing commands.
-- [ ] Issue: implement `--non-interactive` behavior with clear inference or
-  failure rules.
-- [ ] Issue: implement `--dry-run` behavior for write operations.
-- [ ] Issue: implement `--explain` output for resolution, standards selection,
-  and promotion suggestions.
-
-### Epic 4: Parity and automation readiness
-
-- [ ] Issue: define stable exit codes and failure classes for automation.
-- [ ] Issue: build CLI versus library parity fixtures.
+- [ ] Issue: build CLI-versus-library parity fixtures for the broadened command
+  set.
 - [ ] Issue: ensure all write commands surface reviewable diffs or proposed
   mutations rather than silent commits.
-
-### Epic 5: CLI test coverage
-
-- [ ] Issue: add integration tests for every primary command.
-- [ ] Issue: add integration tests for every secondary/admin command.
-- [ ] Issue: add snapshot or golden tests for `--json` outputs.
+- [ ] Issue: add integration coverage for the broadened thin commands.
+- [ ] Issue: add snapshot or golden tests for shared `--json` outputs.
 - [ ] Issue: add behavior tests for `--non-interactive`, `--dry-run`, and
   `--explain`.
 - [ ] Issue: add tests for failure classes, diagnostics, and exit-code
   stability.
+
+### Epic 2: Recommended Branch Cut 2 / Read-Only Admin And Resolution Commands
+
+- [ ] Issue: implement `runectx bundle resolve` on top of the existing
+  resolution/reporting core.
+- [ ] Issue: implement `runectx doctor` with a clearly separate environment,
+  install, and source-posture diagnostic contract.
+- [ ] Issue: add integration tests for `bundle resolve` and `doctor`, including
+  `--json` and `--explain` behavior where applicable.
+
+### Epic 3: Recommended Branch Cut 3 / Local Init Workflow
+
+- [ ] Issue: implement repo-local, local-first `runectx init` scaffolding for
+  embedded and linked workflows.
+- [ ] Issue: ensure alpha.5 `runectx init` does not depend on implicit network
+  fetches; network-enabled install/update hardening remains in `v0.1.0-alpha.8`.
+- [ ] Issue: add integration tests covering embedded and linked local init flows
+  plus `--dry-run`, `--json`, and `--non-interactive` behavior.
+- [ ] Note: `runectx update` is intentionally deferred to `v0.1.0-alpha.8`
+  alongside release/install hardening.
+
+### Epic 4: Recommended Branch Cut 4 / Explicit Promotion Workflow
+
+- [ ] Issue: implement `runectx promote` as the only CLI surface that writes
+  durable promotion mutations.
+- [ ] Issue: define explicit `runectx promote` state transitions from
+  `suggested` to `accepted` and `completed`.
+- [ ] Issue: ensure promotion mutations remain reviewable and machine-readable
+  rather than hidden behind implicit workflow state.
+- [ ] Issue: add integration tests for explicit promotion flows, promotion
+  failure classes, and reviewable output contracts.
+
+### Epic 5: Recommended Branch Cut 5 / Advisory Standards Discovery
+
+- [ ] Issue: implement advisory-only `runectx standard discover` candidate
+  output.
+- [ ] Issue: allow interactive `runectx standard discover` runs to hand off to
+  `runectx promote` only after explicit user confirmation.
+- [ ] Issue: ensure `runectx standard discover --non-interactive` emits reusable
+  candidate data and exits without mutation.
+- [ ] Issue: add integration tests for advisory discovery, interactive handoff,
+  and non-interactive no-mutation behavior.
 
 ### Exit Criteria
 
@@ -973,6 +1018,9 @@ verifiable tracing, while keeping assurance progressive rather than mandatory.
   alpha.6 should add assurance evidence and enablement on top of that same
   command surface rather than introducing an alternate source of truth or a
   parallel authoring model.
+- Assurance receipts for durable knowledge promotion should attach to the
+  explicit `runectx promote` workflow introduced in alpha.5 rather than
+  inventing an assurance-only promotion mutation surface.
 
 ### Epic 1: Assurance-tier model
 
@@ -1054,6 +1102,12 @@ verifiable tracing, while keeping assurance progressive rather than mandatory.
 
 Primary outcome: make RuneContext comfortable to use inside multiple coding
 tools while preserving one core model.
+
+### Implementation Notes
+
+- Adapters should preserve the alpha.5 split between advisory `standard
+  discover` output and explicit confirmed `promote` mutations rather than
+  inventing hidden tool-specific auto-promotion behavior.
 
 ### Epic 1: Canonical operations reference
 

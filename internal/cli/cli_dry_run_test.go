@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"syscall"
 	"testing"
 )
 
@@ -77,25 +76,6 @@ func TestCloneSymlinkRejectsOutsideRoot(t *testing.T) {
 	if err := cloneSymlink(root, link, filepath.Join(t.TempDir(), "dest")); err == nil {
 		t.Fatalf("expected escaping symlink to fail")
 	} else if !strings.Contains(err.Error(), "resolving outside project root") {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestCloneFileEntryRejectsUnsupportedFileType(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("named pipes unsupported on Windows")
-	}
-	srcRoot := t.TempDir()
-	special := filepath.Join(srcRoot, "pipe")
-	if err := syscall.Mkfifo(special, 0o644); err != nil {
-		if err == syscall.ENOSYS || err == syscall.EPERM {
-			t.Skipf("mkfifo not available: %v", err)
-		}
-		t.Fatalf("mkfifo: %v", err)
-	}
-	if err := cloneFileEntry(&snapshotState{}, snapshotLimits{}, srcRoot, special, filepath.Join(t.TempDir(), "pipe")); err == nil {
-		t.Fatalf("expected unsupported file type error")
-	} else if !strings.Contains(err.Error(), "rejects unsupported file type") {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

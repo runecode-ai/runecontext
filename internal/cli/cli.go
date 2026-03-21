@@ -15,9 +15,9 @@ const (
 	validateUsage         = "runectx validate [--json] [--non-interactive] [--explain] [--ssh-allowed-signers PATH] [path]"
 	statusUsage           = "runectx status [--json] [--non-interactive] [--explain] [path]"
 	changeUsage           = "runectx change [--json] [--non-interactive] [--dry-run] [--explain] <new|shape|close|reallocate> ..."
-	bundleUsage           = "runectx bundle <resolve>"
-	bundleResolveUsage    = "runectx bundle resolve [--json] [--explain] [--path PATH] <bundle-id>..."
-	doctorUsage           = "runectx doctor [--json] [--non-interactive] [--explain] [--path PATH]"
+	bundleUsage           = "runectx bundle [--json] [--non-interactive] [--explain] <resolve>"
+	bundleResolveUsage    = "runectx bundle resolve [--json] [--non-interactive] [--explain] [--path PATH] <bundle-id>..."
+	doctorUsage           = "runectx doctor [--json] [--non-interactive] [--explain] [--path PATH] [path]"
 	changeNewUsage        = "runectx change new [--json] [--non-interactive] [--dry-run] [--explain] --title TITLE --type TYPE [--size SIZE] [--bundle ID] [--shape minimum|full] [--description TEXT] [--path PATH]"
 	changeShapeUsage      = "runectx change shape [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--design TEXT] [--verification TEXT] [--task TEXT] [--reference TEXT] [--path PATH]"
 	changeCloseUsage      = "runectx change close [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--verification-status STATUS] [--superseded-by ID] [--closed-at YYYY-MM-DD] [--path PATH]"
@@ -45,7 +45,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		printUsage(stdout)
 		return exitOK
 	default:
-		writeCommandUsageError(stderr, args[0], fmt.Sprintf("runectx %s", args[0]), fmt.Errorf("unknown command %q", args[0]))
+		writeCommandUsageError(stderr, args[0], "runectx help", fmt.Errorf("unknown command %q", args[0]))
 		return exitUsage
 	}
 }

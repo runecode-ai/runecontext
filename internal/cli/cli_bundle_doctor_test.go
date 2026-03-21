@@ -73,3 +73,30 @@ func TestRunDoctorSuccess(t *testing.T) {
 		t.Fatalf("expected project_root in doctor output, got %#v", fields)
 	}
 }
+
+func TestRunDoctorPositionalPath(t *testing.T) {
+	projectRoot := repoFixtureRoot(t, "bundle-resolution", "valid-project")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"doctor", projectRoot}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if got, want := fields["command"], doctorCommand; got != want {
+		t.Fatalf("expected command %q, got %q", want, got)
+	}
+}
+
+func TestRunDoctorPathConflict(t *testing.T) {
+	projectRoot := repoFixtureRoot(t, "bundle-resolution", "valid-project")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"doctor", "--path", projectRoot, "other"}, &stdout, &stderr)
+	if code != exitUsage {
+		t.Fatalf("expected usage exit code, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "cannot use both --path and a positional path argument") {
+		t.Fatalf("expected --path conflict error, got %q", stderr.String())
+	}
+}

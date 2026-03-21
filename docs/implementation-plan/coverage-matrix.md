@@ -57,8 +57,8 @@ milestones, and executable fixtures/tests.
 | Archive/Promotion Rule | Stable-path close behavior | `alpha.3` | Yes |
 | Historical Traceability Requirements | Future-safe linkage and readable history | `alpha.3`, `alpha.4` | Yes |
 | Minimal Process And User Experience | Small mental model and progressive disclosure | `alpha.3`, `alpha.5`, `alpha.7` | Yes |
-| Invocation Surfaces And Command Architecture | Thin early change/status wrappers, broader CLI surface, clear command boundaries, and shared machine-facing flags/contracts | `alpha.3`, `alpha.5`, `alpha.7` | Yes |
-| Adapters | Thin adapters, capability model, and auto-validation workflow hooks | `alpha.7` | Yes |
+| Invocation Surfaces And Command Architecture | Thin early change/status wrappers, broader CLI surface, clear command boundaries, shared machine-facing flags/contracts, and completion metadata | `alpha.3`, `alpha.5`, `alpha.7` | Yes |
+| Adapters | Thin adapters, capability model, auto-validation workflow hooks, and adapter-aware suggestion UX | `alpha.7` | Yes |
 | RuneCode Integration Details / Required Capabilities | Companion-track fixtures and acceptance checkpoints | `alpha.2`-`alpha.8`, `mvp-acceptance.md` | Yes |
 | Context Pack Delivery Into Isolates | Pack-hash, artifact, and typed-delivery readiness for companion integration | `alpha.4`-`alpha.8`, `mvp-acceptance.md` | Yes |
 | Reviewable Intent In RuneCode History | Change/proposal binding and audit-history readiness | `alpha.3`-`alpha.8`, `mvp-acceptance.md` | Yes |
@@ -291,6 +291,9 @@ milestones, and executable fixtures/tests.
   envelope and stable failure taxonomy while broadened thin wrappers continue to
   call the same canonical core operations.
   - Planned capture: `alpha.5`
+- Decision: completion/autocomplete should derive from the same stable CLI
+  command, flag, and value definitions rather than a separate command model.
+  - Planned capture: `alpha.7`
 - Decision: `status`, `validate`, and `doctor` remain distinct command surfaces:
   workflow summary, authoritative contract enforcement, and
   environment/install/source-posture diagnostics.
@@ -306,6 +309,14 @@ milestones, and executable fixtures/tests.
   `runecontext/operations/` is the canonical in-project reference/source area
   for underlying RuneContext operations.
   - Planned capture: `alpha.1`, `alpha.7`
+- Decision: alpha.7 completion should officially target Bash, Zsh, and Fish
+  first, with PowerShell and Windows command-prompt completion deferred until
+  after the MVP.
+  - Planned capture: `alpha.7`, `post-mvp.md`
+- Decision: repo-aware suggestions should remain read-only, honor nearest-root
+  discovery and explicit `--path`, and degrade gracefully outside RuneContext
+  projects.
+  - Planned capture: `alpha.7`
 - Decision: the release workflow should mirror RuneCode's tag-driven
   build/publish structure, with Nix defining the canonical unsigned release
   asset set.

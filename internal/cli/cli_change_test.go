@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -175,6 +176,40 @@ func TestRunChangeNewRejectsMissingValueBeforeNextFlag(t *testing.T) {
 	}
 }
 
+func TestRunChangeNewDryRunDoesNotPersistChange(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"change", "new", "--title", "Dry run change", "--type", "feature", "--size", "small", "--bundle", "base", "--dry-run", "--path", projectRoot}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if got, want := fields["dry_run"], "true"; got != want {
+		t.Fatalf("expected dry_run %q, got %q", want, got)
+	}
+	changeID := fields["change_id"]
+	if changeID == "" {
+		t.Fatalf("expected change_id in dry-run output, got %q", stdout.String())
+	}
+	if _, err := os.Stat(filepath.Join(projectRoot, "runecontext", "changes", changeID)); !os.IsNotExist(err) {
+		t.Fatalf("expected dry-run to avoid persisted change, got err=%v", err)
+	}
+}
+
+func TestRunChangeMachineFlagErrorRetainsJson(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"status", "--json", "--dry-run", projectRoot}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code for unsupported flag, got %d (%s)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "\"schema_version\"") {
+		t.Fatalf("expected --json output envelope even when parse fails, got %q", stderr.String())
+	}
+}
+
 func TestRunStatusOutputsCounts(t *testing.T) {
 	projectRoot := prepareCLIWorkflowProject(t)
 	firstID := runCLIChangeNewForTest(t, projectRoot, "Add cache invalidation")
@@ -299,6 +334,45 @@ func TestRunStatusRejectsUnknownFlag(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "unknown status flag") {
 		t.Fatalf("expected unknown status flag output, got %q", stderr.String())
+	}
+}
+
+func TestRunStatusRejectsDryRunFlag(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"status", "--dry-run"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code for unsupported flag, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "--dry-run is only supported for write commands") {
+		t.Fatalf("expected unsupported-flag output, got %q", stderr.String())
+	}
+}
+
+func TestRunStatusJSONOutputEnvelope(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"status", "--json", projectRoot}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	var payload struct {
+		SchemaVersion int               `json:"schema_version"`
+		Result        string            `json:"result"`
+		Command       string            `json:"command"`
+		ExitCode      int               `json:"exit_code"`
+		FailureClass  string            `json:"failure_class"`
+		Data          map[string]string `json:"data"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("expected JSON output, got err=%v payload=%q", err, stdout.String())
+	}
+	if payload.SchemaVersion != 1 || payload.Result != "ok" || payload.Command != "status" || payload.ExitCode != 0 || payload.FailureClass != "none" {
+		t.Fatalf("unexpected JSON envelope: %#v", payload)
+	}
+	if payload.Data["result"] != "ok" || payload.Data["command"] != "status" {
+		t.Fatalf("expected command data fields in JSON output, got %#v", payload.Data)
 	}
 }
 

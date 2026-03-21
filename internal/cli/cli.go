@@ -12,13 +12,13 @@ const (
 )
 
 const (
-	validateUsage         = "runectx validate [--ssh-allowed-signers PATH] [path]"
-	statusUsage           = "runectx status [path]"
-	changeUsage           = "runectx change <new|shape|close|reallocate> ..."
-	changeNewUsage        = "runectx change new --title TITLE --type TYPE [--size SIZE] [--bundle ID] [--shape minimum|full] [--description TEXT] [--path PATH]"
-	changeShapeUsage      = "runectx change shape CHANGE_ID [--design TEXT] [--verification TEXT] [--task TEXT] [--reference TEXT] [--path PATH]"
-	changeCloseUsage      = "runectx change close CHANGE_ID [--verification-status STATUS] [--superseded-by ID] [--closed-at YYYY-MM-DD] [--path PATH]"
-	changeReallocateUsage = "runectx change reallocate CHANGE_ID [--path PATH]"
+	validateUsage         = "runectx validate [--json] [--non-interactive] [--explain] [--ssh-allowed-signers PATH] [path]"
+	statusUsage           = "runectx status [--json] [--non-interactive] [--explain] [path]"
+	changeUsage           = "runectx change [--json] [--non-interactive] [--dry-run] [--explain] <new|shape|close|reallocate> ..."
+	changeNewUsage        = "runectx change new [--json] [--non-interactive] [--dry-run] [--explain] --title TITLE --type TYPE [--size SIZE] [--bundle ID] [--shape minimum|full] [--description TEXT] [--path PATH]"
+	changeShapeUsage      = "runectx change shape [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--design TEXT] [--verification TEXT] [--task TEXT] [--reference TEXT] [--path PATH]"
+	changeCloseUsage      = "runectx change close [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--verification-status STATUS] [--superseded-by ID] [--closed-at YYYY-MM-DD] [--path PATH]"
+	changeReallocateUsage = "runectx change reallocate [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--path PATH]"
 )
 
 func Run(args []string, stdout, stderr io.Writer) int {

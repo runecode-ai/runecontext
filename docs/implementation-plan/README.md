@@ -299,8 +299,9 @@ and coverage stay in one place.
 - Keep `runectx standard discover` advisory-only and `runectx promote` as the
   only durable promotion-mutation surface; interactive handoff must use
   explicit candidate data rather than hidden session state.
-- Keep alpha.5 `runectx init` local-first; network-enabled init/upgrade
-  hardening remains alpha.8 work.
+- Keep `runectx init` local-first and local-only; it should scaffold from the
+  already-installed RuneContext release contents rather than fetching project
+  files over the network.
 - Keep completion and autocomplete metadata derived from the same stable CLI
   command/flag/value definitions rather than maintaining a second hand-authored
   command model.
@@ -365,22 +366,36 @@ and coverage stay in one place.
 - Keep alpha.7 adapter sync focused on local materialization from installed or
   pinned release contents; alpha.8 hardens release packaging and broader sync/
   update behavior without changing the local-first sync model.
-- Keep `runectx` network access limited to explicit `init` and `upgrade`
-  flows.
+- Keep `runectx` network access limited to an explicit, narrow `upgrade` flow;
+  routine project initialization, adapter sync, validation, and other project
+  file operations should use already-installed local release contents.
 - Keep `runectx upgrade` explicit and preview-first: `runectx upgrade` reports
   the reviewable plan, and `runectx upgrade apply` is the only durable mutation
   surface for source upgrades and migrations.
+- Keep `runectx upgrade` state explicit and fail-closed: project state should be
+  classified as current, upgradeable, unsupported, mixed/stale, or conflicted
+  before apply is allowed.
+- Keep project upgrade planning centered on project-level `runecontext_version`
+  transitions, with file-level `schema_version` checks and explicit migration
+  markers acting as subordinate gates for individual transforms.
 - Keep source upgrades transactional: stage work in tool-owned temporary space,
   validate the staged result before replacing live files, and roll back
   automatically on any in-flight failure.
 - Keep successful rollback in normal project history rather than a hidden
   RuneContext rollback store or other second source of truth.
+- Keep embedded upgrade conflict handling fail-closed: if user-modified managed
+  files are detected, preview should emit a reviewable conflict set and
+  `upgrade apply` should refuse to proceed rather than auto-merging or
+  overwriting.
 - Keep `type: path` sources externally managed for upgrades: surface the owning
   source path and instructions, but never mutate files outside the selected
   project root.
 - Keep mixed-version trees after merge/rebase invalid but repairable through an
   explicit rerun of `runectx upgrade`; `validate` and `doctor` should detect the
   stale-file state rather than silently tolerating it.
+- Keep Windows MVP support focused on repo-bundle usability and portability
+  validation; convenience binary/distribution parity beyond Linux/macOS remains
+  post-MVP work.
 - Treat RuneContext content as untrusted LLM input as well as untrusted policy
   input; rely on typed boundaries, review, and isolation rather than trusting
   the text itself.

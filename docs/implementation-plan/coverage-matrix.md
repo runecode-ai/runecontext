@@ -307,7 +307,8 @@ milestones, and executable fixtures/tests.
   persisting files.
   - Planned capture: `alpha.5`
 - Decision: alpha.5 `runectx init` is repo-local and local-first; release/install
-  hardening and network-enabled init/upgrade behavior remain alpha.8 work.
+  hardening and the explicit network-enabled `runectx upgrade` flow remain
+  alpha.8 work.
   - Planned capture: `alpha.5`, `alpha.8`
 - Decision: `adapter` means the tool UX layer, `adapter pack` means the
   packaged release payload for an adapter, and `runecontext/operations/` is the
@@ -356,17 +357,33 @@ milestones, and executable fixtures/tests.
   after edits to authoritative RuneContext files and surface failures
   immediately.
   - Planned capture: `alpha.7`
-- Decision: `runectx` must not make network calls outside explicit `init` and
-  `upgrade` flows.
+- Decision: `runectx` must not make network calls outside explicit `upgrade`
+  flows.
   - Planned capture: `alpha.5`, `alpha.7`, `alpha.8`
+- Decision: `runectx init` remains local-only and scaffolds from already-
+  installed RuneContext release contents; `runectx upgrade` is the only CLI
+  flow allowed to make narrow, explicit network calls.
+  - Planned capture: `alpha.8`
 - Decision: `runectx upgrade` is preview-first and reviewable, and
   `runectx upgrade apply` is the only durable mutation surface for source-tree
   upgrades and migrations.
+  - Planned capture: `alpha.8`
+- Decision: project upgrade planning should classify state explicitly as
+  `current`, `upgradeable`, `unsupported_project_version`,
+  `mixed_or_stale_tree`, or `conflicted` before apply is allowed.
+  - Planned capture: `alpha.8`
+- Decision: the upgrade migrator registry should be driven by project-level
+  `runecontext_version` transition edges, with file-level `schema_version`
+  checks and explicit migration markers acting as subordinate transform gates.
   - Planned capture: `alpha.8`
 - Decision: source upgrades must be transactional: stage in tool-owned
   temporary space, validate before replace, and auto-rollback on in-flight
   failure; successful rollback stays in normal VCS history rather than hidden
   tool state.
+  - Planned capture: `alpha.8`
+- Decision: embedded upgrade conflicts should fail closed with a reviewable
+  conflict set rather than auto-merging or overwriting user-modified managed
+  files.
   - Planned capture: `alpha.8`
 - Decision: `type: path` sources remain externally managed for upgrades and must
   never be mutated by `runectx`; users are directed to navigate to the owning
@@ -380,6 +397,10 @@ milestones, and executable fixtures/tests.
   `doctor` should detect stale files and require an explicit rerun of
   `runectx upgrade`.
   - Planned capture: `alpha.8`, `v0.1.0`
+- Decision: Windows MVP support should cover portability validation and
+  repo-bundle usability, while Windows binary/distribution convenience parity
+  remains post-MVP.
+  - Planned capture: `alpha.8`, `post-mvp.md`
 - Decision: `plain` and `verified` should share one authored workflow, and
   standalone `runectx` must be able to emit the same portable minimal receipts a
   Verified repo requires while RuneCode adds richer parallel evidence.

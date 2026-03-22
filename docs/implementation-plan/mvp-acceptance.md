@@ -291,7 +291,8 @@
   incremental; current alpha.5 commands surface explicit `explain_warning`
   metadata when `--explain` is accepted but detailed explain output is pending.
 - [x] `runectx init` covers repo-local embedded/linked scaffolding in alpha.5,
-  while network-enabled init/upgrade hardening remains deferred to alpha.8.
+  while broader release/install hardening and the explicit network-enabled
+  `runectx upgrade` flow remain deferred to alpha.8.
 - [ ] `runectx standard discover` is advisory-only; interactive runs may chain
   into `promote` only after explicit confirmation, while `--non-interactive`
   discovery emits reusable candidate data and exits without mutation.
@@ -374,16 +375,25 @@
 - [ ] Linux and macOS `runectx` binary archives are published as signed and
   attested convenience assets without replacing the canonical repo bundles.
 - [ ] Manual repo install is documented and tested.
+- [ ] `runectx init` is local-only and scaffolds from already-installed release
+  contents rather than fetching project files over the network.
 - [ ] `runectx upgrade` is preview-first, diff-first, and reviewable.
 - [ ] `runectx upgrade apply` is the only durable mutation surface for source
   upgrades and migrations.
+- [ ] Project upgrade planning classifies state explicitly as `current`,
+  `upgradeable`, `unsupported_project_version`, `mixed_or_stale_tree`, or
+  `conflicted` before apply is allowed.
+- [ ] The upgrade planner/migrator registry is driven by project-level
+  `runecontext_version` transitions, with file-level `schema_version` checks and
+  explicit migration markers acting as subordinate transform gates.
 - [ ] Source upgrades stage work in tool-owned temporary space, validate the
   staged result before replacing live files, and auto-rollback on in-flight
   failure.
 - [ ] Successful rollback guidance relies on normal VCS history rather than a
   hidden RuneContext rollback store.
 - [ ] Embedded upgrades detect locally modified managed files and stop with
-  conflict-style guidance rather than silently overwriting user changes.
+  a reviewable conflict set and fail closed rather than silently overwriting or
+  auto-merging user changes.
 - [ ] Git upgrades update only pinned source reference fields in
   `runecontext.yaml` and do not rewrite linked source trees.
 - [ ] `type: path` sources are treated as externally managed and are never
@@ -396,8 +406,11 @@
 - [ ] `validate` and `doctor` detect unsupported version combinations and stale
   mixed-version trees after merge/rebase and direct users to rerun
   `runectx upgrade`.
-- [ ] `runectx` makes no network calls outside explicit `init` and `upgrade`
+- [ ] `doctor` also provides explicit upgrade-readiness diagnostics.
+- [ ] `runectx` makes no network calls outside explicit `runectx upgrade`
   flows.
+- [ ] Windows MVP support covers portability validation and repo-bundle install
+  usability without requiring binary convenience parity.
 - [ ] The following anti-patterns are absent: required global installs,
   bash-only installers, overwriting existing `.claude`/`.github` files,
   hidden runtime-manager dependencies, template-only primary distribution,

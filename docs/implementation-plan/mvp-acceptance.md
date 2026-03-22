@@ -307,9 +307,9 @@
 - [ ] Plain and Verified use the same authored workflow and repository source
   model; Verified adds portable evidence requirements rather than alternate
   source-of-truth files.
-- [ ] Baseline and receipt families share one stable portable assurance envelope
+- [ ] Baseline and receipt families share one stable portable assurance envelope and expose the same flat schema fields for envelope metadata and receipt-specific identifiers
   with explicit artifact kind, stable subject identity, deterministic hashing
-  metadata where applicable, and explicit provenance-class distinctions.
+  metadata where applicable, and explicit provenance-class distinctions; golden fixtures live under `fixtures/assurance/golden/` to prove the layout.
 - [ ] Verified mode generates a baseline artifact.
 - [ ] Verified mode generates receipt families for context packs, changes,
   promotions, and verifications.

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schema_version", "kind", "subject_id", "created_at", "canonicalization", "receipt_id", "receipt_hash"],
+  "properties": {
+    "schema_version": {"type": "integer", "minimum": 1},
+    "kind": {"type": "string"},
+    "subject_id": {"type": "string"},
+    "created_at": {"type": "integer"},
+    "canonicalization": {"type": "string"},
+    "value": {},
+    "receipt_id": {"type": "string"},
+    "receipt_hash": {"type": "string"},
+    "provenance": {"type": "string"}
+  },
+  "additionalProperties": false
+}

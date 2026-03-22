@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "kind": "receipt",
+  "subject_id": "context-pack",
+  "created_at": 1710000005,
+  "canonicalization": "runecontext-canonical-json-v1",
+  "receipt_id": "context-pack-abc123-1710000005-012345",
+  "receipt_hash": "deadbeefcafebabe",
+  "provenance": "captured_verified",
+  "value": {
+    "pack_hash": "abcdefabcdef",
+    "requested_bundle_ids": ["bundle-a"]
+  }
+}

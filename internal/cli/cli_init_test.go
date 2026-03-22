@@ -61,7 +61,7 @@ func TestRunInitCreatesEmbeddedProject(t *testing.T) {
 		t.Fatalf("expected embedded source, got %s", string(data))
 	}
 	for _, sub := range []string{"bundles", "changes"} {
-		if stat, err := os.Stat(filepath.Join(root, sub)); err != nil || !stat.IsDir() {
+		if stat, err := os.Stat(filepath.Join(root, "runecontext", sub)); err != nil || !stat.IsDir() {
 			t.Fatalf("expected %s directory, got %v %v", sub, stat, err)
 		}
 	}
@@ -87,7 +87,7 @@ func TestRunInitLinkedModeAndSeedBundle(t *testing.T) {
 		t.Fatalf("expected linked path source, got %s", string(configData))
 	}
 
-	bundlePath := filepath.Join(root, "bundles", bundleName+".yaml")
+	bundlePath := filepath.Join(root, "runecontext", "bundles", bundleName+".yaml")
 	bundleData, err := os.ReadFile(bundlePath)
 	if err != nil {
 		t.Fatalf("read bundle: %v", err)

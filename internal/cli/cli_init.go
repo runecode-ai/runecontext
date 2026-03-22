@@ -52,8 +52,9 @@ func parseInitState(args []string) (initState, error) {
 	if err != nil {
 		return initState{}, err
 	}
-	bundlesDir := filepath.Join(absRoot, "bundles")
-	changesDir := filepath.Join(absRoot, "changes")
+	contentRoot := filepath.Join(absRoot, "runecontext")
+	bundlesDir := filepath.Join(contentRoot, "bundles")
+	changesDir := filepath.Join(contentRoot, "changes")
 	configPath := filepath.Join(absRoot, "runecontext.yaml")
 	effectiveMode := request.mode
 	if effectiveMode == "" {
@@ -68,7 +69,7 @@ func parseInitState(args []string) (initState, error) {
 	if err != nil {
 		return initState{}, err
 	}
-	return buildInitState(absRoot, bundlesDir, changesDir, configPath, effectiveMode, request.mode != "", sourceType, seedBundleName, bundlePath), nil
+	return buildInitState(absRoot, contentRoot, bundlesDir, changesDir, configPath, effectiveMode, request.mode != "", sourceType, seedBundleName, bundlePath), nil
 }
 
 func resolveSeedBundlePath(seedBundleName, bundlesDir string) (string, error) {
@@ -99,6 +100,7 @@ type initState struct {
 	bundlesDir     string
 	changesDir     string
 	configPath     string
+	contentRoot    string
 	effectiveMode  string
 	modeExplicit   bool
 	sourceType     string
@@ -107,9 +109,10 @@ type initState struct {
 	plan           []string
 }
 
-func buildInitState(absRoot, bundlesDir, changesDir, configPath, effectiveMode string, modeExplicit bool, sourceType, seedBundleName, bundlePath string) initState {
+func buildInitState(absRoot, contentRoot, bundlesDir, changesDir, configPath, effectiveMode string, modeExplicit bool, sourceType, seedBundleName, bundlePath string) initState {
 	state := initState{
 		absRoot:        absRoot,
+		contentRoot:    contentRoot,
 		bundlesDir:     bundlesDir,
 		changesDir:     changesDir,
 		configPath:     configPath,
@@ -126,6 +129,7 @@ func buildInitState(absRoot, bundlesDir, changesDir, configPath, effectiveMode s
 func buildInitPlan(state initState) []string {
 	plan := []string{
 		fmt.Sprintf("ensure directory %s", state.absRoot),
+		fmt.Sprintf("ensure directory %s", state.contentRoot),
 		fmt.Sprintf("ensure directory %s", state.bundlesDir),
 		fmt.Sprintf("ensure directory %s", state.changesDir),
 	}
@@ -159,6 +163,10 @@ func runInitDryRun(state initState, stdout, stderr io.Writer, machine machineOpt
 func ensureInitDirs(state initState, machine machineOptions, stderr io.Writer) int {
 	if err := os.MkdirAll(state.absRoot, 0o755); err != nil {
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines("init", state.absRoot, err), machine), exitInvalid, failureClassInvalid)
+		return exitInvalid
+	}
+	if err := os.MkdirAll(state.contentRoot, 0o755); err != nil {
+		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines("init", state.contentRoot, err), machine), exitInvalid, failureClassInvalid)
 		return exitInvalid
 	}
 	if err := os.MkdirAll(state.bundlesDir, 0o755); err != nil {

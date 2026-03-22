@@ -56,6 +56,7 @@ func resolveRequestedHandoffTarget(requested string, candidateTargets []string) 
 
 func validateStandardDiscoverHandoffEligibility(plan *standardDiscoverHandoffPlan, request standardDiscoverRequest, machine machineOptions, index *contracts.ProjectIndex, candidateTargets []string) bool {
 	if machine.nonInteractive {
+		plan.Confirmed = false
 		plan.BlockedReason = "non_interactive_requires_explicit_confirmation"
 		return false
 	}

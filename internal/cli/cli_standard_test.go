@@ -213,6 +213,9 @@ func TestRunStandardDiscoverNonInteractiveConfirmedHandoffStaysAdvisory(t *testi
 	if got, want := fields["handoff_eligible"], "false"; got != want {
 		t.Fatalf("expected handoff_eligible %q, got %q", want, got)
 	}
+	if got, want := fields["handoff_confirmed"], "false"; got != want {
+		t.Fatalf("expected handoff_confirmed %q, got %q", want, got)
+	}
 	if got, want := fields["handoff_blocked_reason"], "non_interactive_requires_explicit_confirmation"; got != want {
 		t.Fatalf("expected handoff_blocked_reason %q, got %q", want, got)
 	}

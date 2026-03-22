@@ -346,6 +346,19 @@
   files.
 - [ ] The `generic` adapter remains thin and documentation-first rather than
   becoming a second source of dynamic runtime behavior.
+- [ ] Adapter-layer features are implemented as thin UX over explicit core
+  operations and stable candidate data rather than adapter-only hidden
+  semantics.
+- [ ] At least one tool-specific adapter supports conversational flows for
+  `change new`, `change shape`, `standard discover`, and `promote` while still
+  producing reviewable outputs and preserving the same underlying semantics as
+  the CLI/core operations.
+- [ ] When adapters expose discovery scoping or focus inputs, those inputs map
+  to explicit underlying operation/CLI contract fields rather than living only
+  in prompt text or hidden tool state.
+- [ ] `runectx standard discover` supports those explicit scope/focus inputs as
+  stable underlying operation/CLI-contract fields for adapter-driven targeted
+  discovery.
 - [ ] Adapters and CLI shell completion reuse one canonical completion metadata
   model or equivalent provider surface rather than defining separate command
   semantics.

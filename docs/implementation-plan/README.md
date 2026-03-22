@@ -56,6 +56,17 @@ historical cleanup from new feature design work.
   tool-specific UX layer, `adapter pack` means the packaged release payload for
   an adapter, and `runectx adapter sync <tool>` is the local materialization
   command for those packaged contents.
+- 2026-03-22: Recorded the adapter UX refinement for the remaining MVP work:
+  conversational tool-native flows for `change new`, `change shape`,
+  `standard discover`, and `promote` belong in adapters as thin UX over
+  explicit core operations, with any discovery scope/focus inputs exposed in
+  the underlying operation contract rather than hidden in prompt-only state.
+- 2026-03-22: Recorded two post-MVP planning boundaries from enhancement
+  review: migration from other spec-driven systems is a separate adoption/
+  import surface rather than part of `runectx upgrade`, and future portable
+  instruction-module work should compile into tool-native skills/prompts/
+  instructions without turning capability-bearing tool config into RuneContext
+  core semantics.
 
 ## MVP Definition
 
@@ -74,6 +85,8 @@ The MVP includes every v1 RuneContext feature described in
 - Plain and Verified assurance tiers
 - minimal CLI surface
 - thin adapters as the primary day-to-day UX
+- conversational adapter UX for selected authoring, discovery, and promotion
+  flows built as thin layers over explicit core operations
 - repo-first releases, reviewable upgrades, and compatibility documentation
 - signed and attested Linux/macOS `runectx` binaries as convenience release
   assets alongside the canonical repo bundles
@@ -92,7 +105,7 @@ contracts RuneCode needs in order to integrate cleanly.
 | `v0.1.0-alpha.4` | Deterministic context packs, stable generated indexes, and reviewable promotion assessment |
 | `v0.1.0-alpha.5` | Broadened CLI, `init` scaffolding, promotion/resolve flows, validation, doctoring, and machine-facing command contracts |
 | `v0.1.0-alpha.6` | Plain/Verified assurance, baselines, receipts, and backfill |
-| `v0.1.0-alpha.7` | Generic and tool-specific adapters, completion UX, and local adapter sync |
+| `v0.1.0-alpha.7` | Generic and tool-specific adapters, conversational adapter UX, completion UX, and local adapter sync |
 | `v0.1.0-alpha.8` | Release/install/upgrade hardening, networked `init`/`upgrade` flows, and end-to-end MVP readiness fixtures |
 | `v0.1.0` | Stabilization, compatibility freeze, and MVP acceptance sign-off |
 
@@ -309,6 +322,17 @@ and coverage stay in one place.
   CLI metadata; human-readable operations docs, shell completion scripts,
   machine-readable completion metadata, and adapter-native suggestion surfaces
   should all be derived from that same registry.
+- Keep adapter-layer features implemented as thin UX over explicit core
+  operations and stable candidate data; adapters may be more conversational,
+  but they must not invent hidden semantics, alternate mutation paths, or a
+  second source of truth.
+- Keep conversational adapter UX focused on authoring/discovery/promotion flows
+  such as `change new`, `change shape`, `standard discover`, and `promote`;
+  prefer normal host conversation turns plus reviewable outputs over disruptive
+  questionnaire-style widgets when the host can support that pattern.
+- Keep discovery scoping and user-supplied focus inputs explicit in the
+  underlying operation and stable CLI contract whenever adapters expose them,
+  so those semantics are not trapped inside prompt text.
 - Keep repo-aware suggestions read-only, nearest-root-aware, and resilient when
   the current directory is not a RuneContext project.
 - Keep adapter-triggered validation narrowly scoped to authored authoritative
@@ -326,6 +350,14 @@ and coverage stay in one place.
 - Keep adapter compatibility mode explicit and capability-based: weaker hosts may
   lose convenience features such as prompts, hooks, or dynamic suggestions, but
   they must not change core RuneContext semantics.
+- Keep future project/company instruction assets as a separate portable source
+  family compiled by adapters into tool-native skills, prompts, or instruction
+  files; do not treat those generated tool-native files as the authoritative
+  source of truth.
+- Keep capability-bearing tool configuration outside RuneContext core semantics,
+  including permissions, execution rules, hooks with side effects, MCP trust or
+  credential config, model-selection policy, and any other setting that would
+  widen runtime authority.
 - Keep write-command `--dry-run` behavior centered on simulating planned
   mutations and validating the resulting would-be project state rather than
   emitting prose-only intent.
@@ -372,6 +404,9 @@ and coverage stay in one place.
 - Keep `runectx upgrade` explicit and preview-first: `runectx upgrade` reports
   the reviewable plan, and `runectx upgrade apply` is the only durable mutation
   surface for source upgrades and migrations.
+- Keep migration from other spec-driven systems separate from `runectx upgrade`;
+  external adoption/import flows are future dedicated surfaces, not hidden
+  upgrade behavior.
 - Keep `runectx upgrade` state explicit and fail-closed: project state should be
   classified as current, upgradeable, unsupported, mixed/stale, or conflicted
   before apply is allowed.

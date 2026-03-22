@@ -16,7 +16,7 @@ milestones, and executable fixtures/tests.
 | Why RuneContext Exists | Product positioning and portability guardrails | `alpha.1`, `README.md` | Yes |
 | Best Ideas To Keep From Agent OS | Markdown-first, low-ceremony, path-referenced standards | `alpha.1`, `alpha.3` | Yes |
 | OpenSpec Ideas To Mix In | Change orientation, lifecycle state, traceability | `alpha.3`, `alpha.4` | Yes |
-| Research Findings / Design Implications | Planning principles, progressive disclosure, reviewable diffs | `README.md`, `alpha.3`, `alpha.5`, `alpha.7` | Yes |
+| Research Findings / Design Implications | Planning principles, progressive disclosure, reviewable diffs, conversational adapter UX, and brownfield adoption guidance | `README.md`, `alpha.7`, `post-mvp.md` | Yes |
 | Goals | Acceptance criteria and MVP boundaries | `README.md`, `mvp-acceptance.md` | Yes |
 | Non-Goals | Scope guardrails and post-MVP separation | `README.md`, `post-mvp.md` | Yes |
 | Product Decomposition | Core/adapters/RuneCode repository boundary | `alpha.1` | Yes |
@@ -58,7 +58,7 @@ milestones, and executable fixtures/tests.
 | Historical Traceability Requirements | Future-safe linkage and readable history | `alpha.3`, `alpha.4` | Yes |
 | Minimal Process And User Experience | Small mental model and progressive disclosure | `alpha.3`, `alpha.5`, `alpha.7` | Yes |
 | Invocation Surfaces And Command Architecture | Thin early change/status wrappers, broader CLI surface, clear command boundaries, shared machine-facing flags/contracts, and completion metadata | `alpha.3`, `alpha.5`, `alpha.7` | Yes |
-| Adapters | Thin adapters, capability model, auto-validation workflow hooks, and adapter-aware suggestion UX | `alpha.7` | Yes |
+| Adapters | Thin adapters, conversational adapter UX for core authoring/discovery/promotion flows, capability model, auto-validation workflow hooks, and adapter-aware suggestion UX | `alpha.7`, `post-mvp.md` | Yes |
 | RuneCode Integration Details / Required Capabilities | Companion-track fixtures and acceptance checkpoints | `alpha.2`-`alpha.8`, `mvp-acceptance.md` | Yes |
 | Context Pack Delivery Into Isolates | Pack-hash, artifact, and typed-delivery readiness for companion integration | `alpha.4`-`alpha.8`, `mvp-acceptance.md` | Yes |
 | Reviewable Intent In RuneCode History | Change/proposal binding and audit-history readiness | `alpha.3`-`alpha.8`, `mvp-acceptance.md` | Yes |
@@ -357,6 +357,19 @@ milestones, and executable fixtures/tests.
   after edits to authoritative RuneContext files and surface failures
   immediately.
   - Planned capture: `alpha.7`
+- Decision: adapter-layer features should remain thin UX over explicit core
+  operations and stable candidate data rather than inventing adapter-only
+  hidden semantics or alternate mutation paths.
+  - Planned capture: `README.md`, `alpha.7`
+- Decision: conversational adapter UX should be a pre-MVP priority for
+  `change new`, `change shape`, `standard discover`, and `promote` when the
+  host supports normal chat-driven flows, while weaker hosts degrade gracefully
+  without changing semantics.
+  - Planned capture: `alpha.7`, `mvp-acceptance.md`
+- Decision: if adapters expose standards-discovery scoping or focus inputs,
+  those inputs must exist in the underlying operation/CLI contract rather than
+  living only in prompt text or hidden tool state.
+  - Planned capture: `alpha.7`, `mvp-acceptance.md`
 - Decision: `runectx` must not make network calls outside explicit `upgrade`
   flows.
   - Planned capture: `alpha.5`, `alpha.7`, `alpha.8`
@@ -389,6 +402,9 @@ milestones, and executable fixtures/tests.
   never be mutated by `runectx`; users are directed to navigate to the owning
   source path and run the upgrade there.
   - Planned capture: `alpha.8`
+- Decision: migration from another spec-driven system is a separate adoption/
+  import surface and must not overload `runectx upgrade`.
+  - Planned capture: `README.md`, `alpha.8`, `post-mvp.md`
 - Decision: embedded upgrades may rewrite managed repo-local files, git upgrades
   mutate only pinned source references in `runecontext.yaml`, and read-only
   commands must never perform hidden migration.
@@ -421,6 +437,11 @@ milestones, and executable fixtures/tests.
 - Decision: backfill is additive-only, bounded to pre-adoption history, and
   must never rewrite native post-adoption `captured_verified` receipts.
   - Planned capture: `alpha.6`
+- Decision: future project/company instruction assets should live in a separate
+  portable artifact family that adapters compile into tool-native skills,
+  prompts, or instruction files, while capability-bearing tool configuration
+  remains outside RuneContext core semantics.
+  - Planned capture: `README.md`, `post-mvp.md`
 
 ## Deferred But Captured
 

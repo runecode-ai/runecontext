@@ -1178,6 +1178,9 @@ tools while preserving one core model.
   layer, `adapter pack` means the packaged release payload for an adapter, and
   `runectx adapter sync <tool>` means local materialization of adapter files
   from installed or pinned release contents.
+- Because the alpha.5 CLI broadening work is already complete, any additive
+  adapter-facing refinements needed for conversational host UX should land here
+  in alpha.7 rather than retroactively changing earlier milestone scope.
 - Rich completion and suggestion UX should derive from the stable alpha.5 CLI
   contract so completions are never a second command-definition source of truth.
 - Alpha.7 should formalize one typed internal command/operation registry as the
@@ -1192,6 +1195,15 @@ tools while preserving one core model.
 - Adapter-native suggestion UX should reuse the same underlying completion
   metadata/providers as shell completion rather than inventing adapter-only
   command semantics.
+- For authoring, discovery, and promotion workflows that users primarily reach
+  through adapters, alpha.7 should prefer conversational host-native UX for
+  `change new`, `change shape`, `standard discover`, and `promote` when the
+  host supports it, while avoiding disruptive questionnaire-style widgets.
+- Those conversational flows must remain thin UX over explicit core operations
+  and stable candidate data. If an adapter lets the user scope discovery to
+  specific files/directories or describe a focus area, the same structured
+  inputs must already exist in the underlying operation/CLI contract rather than
+  living only in prompt text.
 - Adapter-triggered `runectx validate` should run only after a workflow step
   edits authored authoritative RuneContext files: `runecontext.yaml`,
   `bundles/**/*.yaml`, `project/**/*.md`, `standards/**/*.md`, `specs/**/*.md`,
@@ -1227,6 +1239,10 @@ recommended branch cuts.
 - [ ] Issue: define adapter-to-core operation mapping rules.
 - [ ] Issue: define how adapters consume or derive from the canonical
   operations reference without redefining semantics.
+- [ ] Issue: define additive operation/CLI-contract extensions needed for
+  conversational adapter UX, including explicit standards-discovery scope-path
+  and user-supplied focus inputs, without changing the completed alpha.5 core
+  command semantics.
 - [ ] Issue: implement one typed internal command/operation registry as the
   canonical source for command, subcommand, flag, and stable enum/value
   metadata.
@@ -1249,6 +1265,9 @@ recommended branch cuts.
 - [ ] Issue: author the `generic` adapter as a thin docs-first baseline for
   manual, CLI-assisted, and non-agent workflows.
 - [ ] Issue: provide example flows for manual, CLI-assisted, and non-agent use.
+- [ ] Issue: document the conversational adapter pattern for host-native
+  chat-driven flows that map back to explicit RuneContext operations instead of
+  questionnaire-style UX or adapter-only state.
 - [ ] Issue: document that dynamic suggestions are a shared CLI/completion
   feature rather than `generic` adapter-specific hidden behavior.
 - [ ] Issue: implement repo-aware dynamic suggestions for change IDs, bundle IDs,
@@ -1277,15 +1296,25 @@ recommended branch cuts.
   `runectx upgrade` flows.
 - [ ] Issue: ensure adapters never introduce tool-specific source-of-truth
   files.
+- [ ] Issue: define the adapter rule that conversational UX for `change new`,
+  `change shape`, `standard discover`, and `promote` remains a thin wrapper
+  over explicit core operations, stable candidate data, and reviewable outputs.
+- [ ] Issue: ensure explicit promotion candidate/target data is reusable by tool
+  adapters so conversational adapter flows do not depend on hidden session
+  state or questionnaire-style handoff.
 - [ ] Issue: define the authoritative-file rule for adapter-triggered
   `runectx validate`, limited to authored RuneContext files and excluding
   generated artifacts, adapter-managed files, and unrelated repository code.
 - [ ] Issue: author one tool-specific adapter end to end.
+- [ ] Issue: make that first end-to-end tool adapter support conversational
+  flows for `change new`, `change shape`, `standard discover`, and `promote`
+  without changing core semantics.
 - [ ] Issue: add tool-native automation/skills that run `runectx validate`
   after edits to authoritative RuneContext files and surface failures
   immediately.
 - [ ] Issue: add smoke and parity tests for the first end-to-end tool adapter,
-  sync behavior, managed-file boundaries, and validate-after-edit triggering.
+  sync behavior, managed-file boundaries, validate-after-edit triggering, and
+  conversational-flow parity with the underlying CLI/operation contracts.
 
 ### Recommended Branch Cut 4: Remaining tool-specific adapters, compatibility mode, and parity hardening
 
@@ -1297,6 +1326,9 @@ recommended branch cuts.
   structured-output integration.
 - [ ] Issue: add tool-native suggestion/autocomplete integrations that reuse the
   canonical completion metadata for hosts that support richer UX.
+- [ ] Issue: add parity checks proving that richer conversational adapter UX for
+  `change new`, `change shape`, `standard discover`, and `promote` still maps
+  back to the same explicit core operations and candidate data across hosts.
 - [ ] Issue: add smoke tests for the `generic`, `claude-code`, `opencode`, and
   `codex` adapters.
 - [ ] Issue: add parity checks showing adapter flows map back to the same core
@@ -1316,6 +1348,9 @@ recommended branch cuts.
   machine-readable completion metadata, and adapter-native suggestion surfaces.
 - Bash, Zsh, and Fish users can install shell completion for the stable CLI
   surface.
+- At least one tool-specific adapter provides conversational UX for `change
+  new`, `change shape`, `standard discover`, and `promote` without changing the
+  underlying RuneContext semantics.
 - Repo-aware suggestions help users discover valid change IDs, bundles,
   promotion targets, and adapter names without mutating project state.
 - The `generic` adapter remains a thin host-agnostic baseline rather than a
@@ -1358,6 +1393,8 @@ install/upgrade paths and end-to-end reference fixtures.
 - `runectx upgrade` is the only CLI flow that may make network calls, and that
   network use should stay narrow and explicit around acquiring newer signed
   release contents rather than ordinary project-file mutation.
+- External migration/adoption from other spec-driven systems remains a separate
+  future command surface and must not be folded into `runectx upgrade`.
 - `schema_version` remains the fail-closed parser contract for individual
   machine-readable files, while `runecontext_version` identifies the installed
   RuneContext release for compatibility checks and upgrade planning.

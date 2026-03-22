@@ -158,3 +158,101 @@ func TestRunInitJSONEnvelope(t *testing.T) {
 		t.Fatalf("unexpected root in json output: %s", envelope.Data["root"])
 	}
 }
+
+func TestRunInitFailureReportsRootAndErrorPathForConfig(t *testing.T) {
+	t.Parallel()
+
+	root := filepath.Join(t.TempDir(), "existing-config-project")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatalf("mkdir root: %v", err)
+	}
+	configPath := filepath.Join(root, "runecontext.yaml")
+	if err := os.WriteFile(configPath, []byte("schema_version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write existing config: %v", err)
+	}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		t.Fatalf("abs root: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"init", "--path", root}, &stdout, &stderr)
+	if code != exitInvalid {
+		t.Fatalf("expected invalid exit code, got %d/stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "result=invalid") {
+		t.Fatalf("expected invalid result output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "root="+absRoot) {
+		t.Fatalf("expected project root output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "error_path="+configPath) {
+		t.Fatalf("expected config error_path output, got %q", stderr.String())
+	}
+}
+
+func TestRunInitFailureReportsRootAndErrorPathForSeedBundle(t *testing.T) {
+	t.Parallel()
+
+	root := filepath.Join(t.TempDir(), "existing-bundle-project")
+	bundlePath := filepath.Join(root, "runecontext", "bundles", "base.yaml")
+	if err := os.MkdirAll(filepath.Dir(bundlePath), 0o755); err != nil {
+		t.Fatalf("mkdir bundle dir: %v", err)
+	}
+	if err := os.WriteFile(bundlePath, []byte("schema_version: 1\nid: \"base\"\nincludes:\n  project: []\n"), 0o644); err != nil {
+		t.Fatalf("write existing bundle: %v", err)
+	}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		t.Fatalf("abs root: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"init", "--path", root, "--seed-bundle", "base"}, &stdout, &stderr)
+	if code != exitInvalid {
+		t.Fatalf("expected invalid exit code, got %d/stderr=%q", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "root="+absRoot) {
+		t.Fatalf("expected project root output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "error_path="+bundlePath) {
+		t.Fatalf("expected bundle error_path output, got %q", stderr.String())
+	}
+}
+
+func TestRunInitFailureJSONReportsRootAndErrorPath(t *testing.T) {
+	t.Parallel()
+
+	root := filepath.Join(t.TempDir(), "json-init-failure")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatalf("mkdir root: %v", err)
+	}
+	configPath := filepath.Join(root, "runecontext.yaml")
+	if err := os.WriteFile(configPath, []byte("schema_version: 1\n"), 0o644); err != nil {
+		t.Fatalf("write existing config: %v", err)
+	}
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		t.Fatalf("abs root: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"init", "--json", "--path", root}, &stdout, &stderr)
+	if code != exitInvalid {
+		t.Fatalf("expected invalid exit code, got %d/stderr=%q", code, stderr.String())
+	}
+
+	var envelope machineEnvelope
+	if err := json.Unmarshal(bytes.TrimSpace(stderr.Bytes()), &envelope); err != nil {
+		t.Fatalf("unmarshal json output: %v", err)
+	}
+	if envelope.Data["root"] != absRoot {
+		t.Fatalf("unexpected root in json output: %s", envelope.Data["root"])
+	}
+	if envelope.Data["error_path"] != configPath {
+		t.Fatalf("unexpected error_path in json output: %s", envelope.Data["error_path"])
+	}
+}

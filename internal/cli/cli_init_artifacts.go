@@ -40,7 +40,7 @@ func createInitSeedBundle(state initState, machine machineOptions, stderr io.Wri
 		return false, exitOK
 	}
 	if err := writeSeedBundle(state.bundlePath, state.seedBundleName); err != nil {
-		return false, reportInitCreateError("init", state.bundlePath, err, machine, stderr)
+		return false, reportInitCreateError("init", state.absRoot, state.bundlePath, err, machine, stderr)
 	}
 	return true, exitOK
 }
@@ -51,21 +51,25 @@ func createInitConfig(state initState, bundleCreated bool, machine machineOption
 		if bundleCreated {
 			_ = os.Remove(state.bundlePath)
 		}
-		return reportInitCreateError("init", state.configPath, err, machine, stderr)
+		return reportInitCreateError("init", state.absRoot, state.configPath, err, machine, stderr)
 	}
 	return exitOK
 }
 
-func reportInitCreateError(command, path string, err error, machine machineOptions, stderr io.Writer) int {
+func reportInitCreateError(command, root, errorPath string, err error, machine machineOptions, stderr io.Writer) int {
 	if errors.Is(err, os.ErrExist) {
-		if path == "" {
+		if errorPath == "" {
 			err = fmt.Errorf("resource already exists")
-		} else if strings.HasSuffix(path, "runecontext.yaml") {
+		} else if strings.HasSuffix(errorPath, "runecontext.yaml") {
 			err = fmt.Errorf("runecontext.yaml already exists")
 		} else {
-			err = fmt.Errorf("bundle %s already exists", path)
+			err = fmt.Errorf("bundle %s already exists", errorPath)
 		}
 	}
-	emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines(command, path, err), machine), exitInvalid, failureClassInvalid)
+	lines := buildCommandInvalidLines(command, root, err)
+	if errorPath != "" {
+		lines = append(lines, line{"error_path", errorPath})
+	}
+	emitOutput(stderr, machine, appendMachineOptionLines(lines, machine), exitInvalid, failureClassInvalid)
 	return exitInvalid
 }

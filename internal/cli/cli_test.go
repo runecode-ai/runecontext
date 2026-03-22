@@ -293,17 +293,16 @@ func parseCLIKeyValueOutput(t *testing.T, output string) map[string]string {
 	t.Helper()
 	fields := map[string]string{}
 	for _, line := range strings.Split(strings.TrimSpace(output), "\n") {
-		if strings.TrimSpace(line) == "" {
+		line = strings.TrimSpace(line)
+		if line == "" {
 			continue
 		}
 		if !strings.Contains(line, "=") {
-			t.Logf("skipping CLI output line without key=value: %q", line)
-			continue
+			t.Fatalf("CLI output line missing key=value: %q", line)
 		}
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
-			t.Logf("skipping malformed CLI output line: %q", line)
-			continue
+			t.Fatalf("malformed CLI output line: %q", line)
 		}
 		fields[parts[0]] = unsanitizeCLIValue(parts[1])
 	}

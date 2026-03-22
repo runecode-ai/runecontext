@@ -149,6 +149,7 @@ Current CLI scope:
   - emits advisory standards candidates and reusable promotion-target data without mutating project state
   - supports `--json`, `--non-interactive`, and `--explain`
 - The CLI emits stable line-oriented `key=value` output by default and supports one shared machine-facing `--json` envelope and failure taxonomy across commands.
+- For invalid command results, `root` identifies the selected project root and `error_path` is emitted when a specific failing artifact path is available.
 
 If you only want a quick in-tree hack loop from this checkout, `go run` still works:
 

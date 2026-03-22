@@ -12,7 +12,6 @@ if [ -z "${version}" ]; then
   printf 'failed to read release version from %s\n' "${metadata_path}" >&2
   exit 1
 fi
-build_tag="v${version}"
 ldflags_version="${version#v}"
 if [ -z "${ldflags_version}" ]; then
   ldflags_version="${version}"

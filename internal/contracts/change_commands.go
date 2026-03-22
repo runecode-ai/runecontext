@@ -48,6 +48,12 @@ type ChangeReallocateOptions struct {
 	Entropy io.Reader
 }
 
+type PromoteOptions struct {
+	Accept   bool
+	Complete bool
+	Targets  []string
+}
+
 type FileMutation struct {
 	Path   string
 	Action string

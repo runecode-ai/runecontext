@@ -156,6 +156,25 @@ func assertJSONGolden(t *testing.T, fixtureName string, payload []byte) {
 
 func normalizeJSONEnvelopeForGolden(t *testing.T, payload []byte) string {
 	t.Helper()
+	envelope := parseJSONEnvelopeForGolden(t, payload)
+	normalizeJSONEnvelopePaths(envelope.Data)
+	normalizeJSONEnvelopeChangeFields(envelope.Data)
+	normalizeJSONEnvelopeTargets(envelope.Data)
+	normalized, err := json.Marshal(envelope)
+	if err != nil {
+		t.Fatalf("marshal normalized JSON envelope: %v", err)
+	}
+	return string(normalized)
+}
+
+func parseJSONEnvelopeForGolden(t *testing.T, payload []byte) *struct {
+	SchemaVersion int               `json:"schema_version"`
+	Result        string            `json:"result"`
+	Command       string            `json:"command"`
+	ExitCode      int               `json:"exit_code"`
+	FailureClass  string            `json:"failure_class"`
+	Data          map[string]string `json:"data"`
+} {
 	var envelope struct {
 		SchemaVersion int               `json:"schema_version"`
 		Result        string            `json:"result"`
@@ -167,20 +186,38 @@ func normalizeJSONEnvelopeForGolden(t *testing.T, payload []byte) string {
 	if err := json.Unmarshal(payload, &envelope); err != nil {
 		t.Fatalf("unmarshal JSON envelope: %v (%s)", err, string(payload))
 	}
+	return &envelope
+}
+
+func normalizeJSONEnvelopePaths(data map[string]string) {
 	for _, key := range []string{"root", "project_root", "source_root", "selected_config_path", "error_path"} {
-		if _, ok := envelope.Data[key]; ok {
-			envelope.Data[key] = "<path>"
+		if _, ok := data[key]; ok {
+			data[key] = "<path>"
 		}
 	}
-	if _, ok := envelope.Data["change_id"]; ok {
-		envelope.Data["change_id"] = "<change-id>"
+}
+
+func normalizeJSONEnvelopeChangeFields(data map[string]string) {
+	if _, ok := data["change_id"]; ok {
+		data["change_id"] = "<change-id>"
 	}
-	if _, ok := envelope.Data["change_path"]; ok {
-		envelope.Data["change_path"] = "<path>"
+	if _, ok := data["change_path"]; ok {
+		data["change_path"] = "<path>"
 	}
-	normalized, err := json.Marshal(envelope)
-	if err != nil {
-		t.Fatalf("marshal normalized JSON envelope: %v", err)
+}
+
+func normalizeJSONEnvelopeTargets(data map[string]string) {
+	for key := range data {
+		if strings.HasPrefix(key, "changed_file_") || key == "changed_file_count" {
+			delete(data, key)
+			continue
+		}
+		if key == "target_count" {
+			data[key] = "<target-count>"
+			continue
+		}
+		if strings.HasPrefix(key, "target_") {
+			data[key] = "<target>"
+		}
 	}
-	return string(normalized)
 }

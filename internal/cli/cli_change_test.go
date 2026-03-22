@@ -133,6 +133,90 @@ func TestRunChangeCloseOutputsClosedChange(t *testing.T) {
 	}
 }
 
+func TestRunPromoteOutputsAcceptedAndCompletedStatus(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	changeID := runCLIStandardChangeNewForTest(t, projectRoot, "Refresh security baseline")
+	runCLIChangeClose(t, projectRoot, changeID, []string{"--verification-status", "passed", "--closed-at", "2026-03-20", "--path", projectRoot})
+
+	var acceptOut bytes.Buffer
+	var acceptErr bytes.Buffer
+	code := Run([]string{"promote", changeID, "--path", projectRoot}, &acceptOut, &acceptErr)
+	if code != 0 {
+		t.Fatalf("expected promote accept success, got %d (%s)", code, acceptErr.String())
+	}
+	acceptFields := parseCLIKeyValueOutput(t, acceptOut.String())
+	if got, want := acceptFields["promotion_status"], "accepted"; got != want {
+		t.Fatalf("expected promotion_status %q, got %q", want, got)
+	}
+
+	var completeOut bytes.Buffer
+	var completeErr bytes.Buffer
+	code = Run([]string{"promote", changeID, "--complete", "--path", projectRoot}, &completeOut, &completeErr)
+	if code != 0 {
+		t.Fatalf("expected promote complete success, got %d (%s)", code, completeErr.String())
+	}
+	completeFields := parseCLIKeyValueOutput(t, completeOut.String())
+	if got, want := completeFields["promotion_status"], "completed"; got != want {
+		t.Fatalf("expected promotion_status %q, got %q", want, got)
+	}
+}
+
+func TestRunPromoteDryRunDoesNotPersistMutation(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	changeID := runCLIStandardChangeNewForTest(t, projectRoot, "Refresh security baseline")
+	runCLIChangeClose(t, projectRoot, changeID, []string{"--verification-status", "passed", "--closed-at", "2026-03-20", "--path", projectRoot})
+
+	statusPath := filepath.Join(projectRoot, "runecontext", "changes", changeID, "status.yaml")
+	before, err := os.ReadFile(statusPath)
+	if err != nil {
+		t.Fatalf("read status before dry-run promote: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"promote", "--dry-run", changeID, "--path", projectRoot}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected dry-run promote success, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if got, want := fields["promotion_status"], "accepted"; got != want {
+		t.Fatalf("expected dry-run promotion_status %q, got %q", want, got)
+	}
+	if got, want := fields["dry_run"], "true"; got != want {
+		t.Fatalf("expected dry_run %q, got %q", want, got)
+	}
+
+	after, err := os.ReadFile(statusPath)
+	if err != nil {
+		t.Fatalf("read status after dry-run promote: %v", err)
+	}
+	if string(after) != string(before) {
+		t.Fatalf("expected dry-run promote to avoid status mutation")
+	}
+}
+
+func TestRunPromoteInvalidTransitionReturnsInvalid(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	changeID := runCLIChangeNewForTest(t, projectRoot, "Add cache invalidation")
+	runCLIChangeClose(t, projectRoot, changeID, []string{"--verification-status", "passed", "--closed-at", "2026-03-20", "--path", projectRoot})
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"promote", changeID, "--path", projectRoot}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("expected invalid exit code, got %d (%s)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "result=invalid") {
+		t.Fatalf("expected invalid result output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "command=promote") {
+		t.Fatalf("expected promote command output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "promotion_assessment.status") {
+		t.Fatalf("expected transition error output, got %q", stderr.String())
+	}
+}
+
 func TestRunChangeReallocateOutputsNewChangeID(t *testing.T) {
 	projectRoot := prepareCLIWorkflowProject(t)
 	changeID := runCLIChangeNewForTest(t, projectRoot, "Add cache invalidation")
@@ -388,4 +472,15 @@ func TestRunValidateRejectsInvalidProposal(t *testing.T) {
 	if !strings.Contains(stderr.String(), "error_path=") || !strings.Contains(stderr.String(), "proposal.md") {
 		t.Fatalf("expected proposal path in output, got %q", stderr.String())
 	}
+}
+
+func runCLIStandardChangeNewForTest(t *testing.T, projectRoot, title string) string {
+	t.Helper()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"change", "new", "--title", title, "--type", "standard", "--size", "small", "--bundle", "base", "--path", projectRoot}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("standard change new failed: %d (%s)", code, stderr.String())
+	}
+	return parseCLIKeyValueOutput(t, stdout.String())["change_id"]
 }

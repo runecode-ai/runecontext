@@ -23,6 +23,7 @@ const (
 	changeCloseUsage      = "runectx change close [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--verification-status STATUS] [--superseded-by ID] [--closed-at YYYY-MM-DD] [--path PATH]"
 	changeReallocateUsage = "runectx change reallocate [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--path PATH]"
 	initUsage             = "runectx init [--json] [--non-interactive] [--dry-run] [--explain] [--mode embedded|linked] [--seed-bundle NAME] [--path PATH]"
+	promoteUsage          = "runectx promote [--json] [--non-interactive] [--dry-run] [--explain] CHANGE_ID [--accept | --complete] [--target TYPE:PATH (summary auto-filled per target type)] [--path PATH]"
 )
 
 func Run(args []string, stdout, stderr io.Writer) int {
@@ -44,6 +45,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		return runDoctor(args[1:], stdout, stderr)
 	case "init":
 		return runInit(args[1:], stdout, stderr)
+	case "promote":
+		return runPromote(args[1:], stdout, stderr)
 	case "help", "--help", "-h":
 		printUsage(stdout)
 		return exitOK
@@ -64,6 +67,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  validate   Validate RuneContext contracts for a project root")
 	fmt.Fprintln(w, "  doctor     Run environment and resolution diagnostics")
 	fmt.Fprintln(w, "  init       Scaffold a RuneContext project")
+	fmt.Fprintln(w, "  promote    Explicitly advance promotion assessment state (summary auto-filled for --target entries)")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  runectx help")
@@ -76,4 +80,5 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  "+bundleResolveUsage)
 	fmt.Fprintln(w, "  "+doctorUsage)
 	fmt.Fprintln(w, "  "+initUsage)
+	fmt.Fprintln(w, "  "+promoteUsage)
 }

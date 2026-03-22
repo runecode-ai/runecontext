@@ -63,6 +63,19 @@ func closePromotionTargets(record *ChangeRecord) []any {
 	return targets
 }
 
+func defaultPromotionTargetSummary(targetType string) string {
+	switch strings.TrimSpace(targetType) {
+	case "spec":
+		return promotionSummarySpec
+	case "standard":
+		return promotionSummaryStandard
+	case "decision":
+		return promotionSummaryDecision
+	default:
+		return ""
+	}
+}
+
 func trimmedStringField(raw any) string {
 	s, ok := raw.(string)
 	if !ok {

@@ -95,7 +95,7 @@ func TestCreateChangeAllowsNoSelectableStandards(t *testing.T) {
 	if got := len(result.ApplicableStandards); got != 0 {
 		t.Fatalf("expected no applicable standards, got %d (%#v)", got, result.ApplicableStandards)
 	}
-	wantAssumption := "No selectable standards are defined in the project yet; the Applicable Standards section is intentionally blank."
+	wantAssumption := "No selectable standards are defined in the project yet; the Applicable Standards section is rendered as N/A."
 	if !containsStringValue(result.Assumptions, wantAssumption) {
 		t.Fatalf("expected assumptions to include %q, got %#v", wantAssumption, result.Assumptions)
 	}

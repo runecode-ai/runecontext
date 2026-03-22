@@ -5,7 +5,7 @@ effectively in the `runecontext` repository.
 
 ## Scope And Priority
 
-- Applies to the whole repository rooted at `/home/zeb/code/runecode-systems/runecontext`.
+- Applies to the whole repository rooted at the current checkout.
 - Follow direct user instructions first, then this file, then nearby file-level conventions.
 - Treat `docs/project_idea.md` as a historical design baseline, not an active spec.
 - Do not edit `docs/project_idea.md` during normal feature work.

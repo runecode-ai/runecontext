@@ -21,6 +21,12 @@ type machineFlagHandler func(hasValue bool, config machineFlagConfig, options *m
 
 func parseMachineFlags(args []string, config machineFlagConfig) (machineOptions, []string, error) {
 	options := machineOptions{}
+	for _, arg := range args {
+		name, _, _ := strings.Cut(arg, "=")
+		if name == "--json" {
+			options.jsonOutput = true
+		}
+	}
 	remaining := make([]string, 0, len(args))
 	for _, arg := range args {
 		handled, err := applyMachineFlag(arg, config, &options)

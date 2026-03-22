@@ -21,7 +21,9 @@ func createExclusiveFile(path string, data []byte) error {
 }
 
 func writeSeedBundle(path, seedBundleName string) error {
-	data := fmt.Sprintf("schema_version: 1\nid: %q\nincludes: {}\n", seedBundleName)
+	// bundle.schema.json requires `includes` to be an object with at least
+	// one property. Provide a valid empty aspect map to satisfy the schema.
+	data := fmt.Sprintf("schema_version: 1\nid: %q\nincludes:\n  project: []\n", seedBundleName)
 	return createExclusiveFile(path, []byte(data))
 }
 

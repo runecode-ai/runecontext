@@ -92,8 +92,8 @@ func TestRunInitLinkedModeAndSeedBundle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read bundle: %v", err)
 	}
-	if !strings.Contains(string(bundleData), "includes: {}") {
-		t.Fatalf("expected includes map, got %s", string(bundleData))
+	if !strings.Contains(string(bundleData), "includes:\n  project: []") {
+		t.Fatalf("expected includes map with project aspect, got %s", string(bundleData))
 	}
 }
 

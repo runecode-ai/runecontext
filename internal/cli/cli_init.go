@@ -9,7 +9,7 @@ import (
 )
 
 // runecontextVersion is overridden at build time via -ldflags -X.
-var runecontextVersion = "dev"
+var runecontextVersion = "0.0.0-dev"
 
 type initRequest struct {
 	root         string
@@ -28,7 +28,7 @@ func runInit(args []string, stdout, stderr io.Writer) int {
 		return emitInitUsage(stderr, machine, err)
 	}
 	if machine.dryRun {
-		return runInitDryRun(state, stdout, machine)
+		return runInitDryRun(state, stdout, stderr, machine)
 	}
 	return runInitApply(state, machine, stdout, stderr)
 }
@@ -78,7 +78,7 @@ func runInitApply(state initState, machine machineOptions, stdout, stderr io.Wri
 	if code := createInitArtifacts(state, machine, stderr); code != exitOK {
 		return code
 	}
-	return emitInitSuccess(stdout, machine, state)
+	return emitInitSuccess(stdout, stderr, machine, state)
 }
 
 type initState struct {
@@ -123,7 +123,7 @@ func buildInitPlan(state initState) []string {
 	return plan
 }
 
-func runInitDryRun(state initState, stdout io.Writer, machine machineOptions) int {
+func runInitDryRun(state initState, stdout, stderr io.Writer, machine machineOptions) int {
 	output := []line{
 		{"result", "ok"},
 		{"command", "init"},
@@ -135,9 +135,9 @@ func runInitDryRun(state initState, stdout io.Writer, machine machineOptions) in
 	output = appendStringItems(output, "plan_action", state.plan)
 	emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 	if !machine.jsonOutput {
-		fmt.Fprintf(stdout, "Dry run: would initialize RuneContext at %s\n", state.absRoot)
+		fmt.Fprintf(stderr, "Dry run: would initialize RuneContext at %s\n", state.absRoot)
 		for _, action := range state.plan {
-			fmt.Fprintf(stdout, "  - %s\n", action)
+			fmt.Fprintf(stderr, "  - %s\n", action)
 		}
 	}
 	return exitOK
@@ -159,7 +159,7 @@ func ensureInitDirs(state initState, machine machineOptions, stderr io.Writer) i
 	return exitOK
 }
 
-func emitInitSuccess(stdout io.Writer, machine machineOptions, state initState) int {
+func emitInitSuccess(stdout, stderr io.Writer, machine machineOptions, state initState) int {
 	output := []line{
 		{"result", "ok"},
 		{"command", "init"},
@@ -176,7 +176,7 @@ func emitInitSuccess(stdout io.Writer, machine machineOptions, state initState) 
 	}
 	emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 	if !machine.jsonOutput {
-		fmt.Fprintf(stdout, "Initialized RuneContext at %s\n", state.absRoot)
+		fmt.Fprintf(stderr, "Initialized RuneContext at %s\n", state.absRoot)
 	}
 	return exitOK
 }

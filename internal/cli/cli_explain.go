@@ -122,6 +122,21 @@ func appendChangeCloseExplainLines(lines []line, result *contracts.ChangeOperati
 	return lines
 }
 
+func appendPromoteExplainLines(lines []line, result *contracts.ChangeOperationResult) []line {
+	if result == nil {
+		return lines
+	}
+	lines = append(lines,
+		line{"explain_scope", "promotion"},
+		line{"explain_promotion_status", result.PromotionAssessmentStatus},
+		line{"explain_promotion_target_count", fmt.Sprintf("%d", len(result.SuggestedPromotionTargets))},
+	)
+	for i, target := range result.SuggestedPromotionTargets {
+		lines = append(lines, line{fmt.Sprintf("explain_promotion_target_%d", i+1), target})
+	}
+	return lines
+}
+
 func appendChangeReallocateExplainLines(lines []line, result *contracts.ChangeReallocationResult) []line {
 	if result == nil {
 		return lines

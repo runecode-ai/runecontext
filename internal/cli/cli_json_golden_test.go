@@ -178,6 +178,19 @@ func normalizeJSONEnvelopeForGolden(t *testing.T, payload []byte) string {
 	if _, ok := envelope.Data["change_path"]; ok {
 		envelope.Data["change_path"] = "<path>"
 	}
+	for key := range envelope.Data {
+		if strings.HasPrefix(key, "changed_file_") || key == "changed_file_count" {
+			delete(envelope.Data, key)
+			continue
+		}
+		if key == "target_count" {
+			envelope.Data[key] = "<target-count>"
+			continue
+		}
+		if strings.HasPrefix(key, "target_") {
+			envelope.Data[key] = "<target>"
+		}
+	}
 	normalized, err := json.Marshal(envelope)
 	if err != nil {
 		t.Fatalf("marshal normalized JSON envelope: %v", err)

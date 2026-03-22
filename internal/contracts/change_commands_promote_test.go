@@ -132,6 +132,25 @@ func TestPromoteChangeRejectsInvalidTransitions(t *testing.T) {
 	}
 }
 
+func TestPromoteChangeRejectsUnknownTargetType(t *testing.T) {
+	root := copyChangeWorkflowTemplate(t)
+	v, created := mustCreateChange(t, root, ChangeCreateOptions{
+		Title:          "Refine base standard wording",
+		Type:           "standard",
+		ContextBundles: []string{"base"},
+		Now:            time.Date(2026, time.March, 18, 0, 0, 0, 0, time.UTC),
+		Entropy:        strings.NewReader("abc0"),
+	})
+	mustCloseChange(t, v, root, created.ID, ChangeCloseOptions{VerificationStatus: "passed", ClosedAt: time.Date(2026, time.March, 20, 0, 0, 0, 0, time.UTC)})
+
+	loaded := mustReloadWorkflowProject(t, v, root)
+	defer loaded.Close()
+	_, err := PromoteChange(v, loaded, created.ID, PromoteOptions{Targets: []string{"note:notes/agenda.md"}})
+	if err == nil || !strings.Contains(err.Error(), "unknown target type") {
+		t.Fatalf("expected unknown-target-type rejection, got %v", err)
+	}
+}
+
 func mustPromoteChange(t *testing.T, v *Validator, root, changeID string, options PromoteOptions) *ChangeOperationResult {
 	t.Helper()
 	loaded := mustReloadWorkflowProject(t, v, root)

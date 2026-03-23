@@ -67,6 +67,20 @@ historical cleanup from new feature design work.
   instruction-module work should compile into tool-native skills/prompts/
   instructions without turning capability-bearing tool config into RuneContext
   core semantics.
+- 2026-03-23: Recorded Branch Cut 3 assurance-backfill hardening: imported
+  history evidence paths must fail closed if they escape the repository root,
+  and baseline `adoption_commit` values remain strict canonical lowercase
+  40-character SHAs for alpha.6. Any broader `rev-parse`-based normalization
+  path is deferred for later design review instead of being added implicitly in
+  backfill.
+- 2026-03-23: Completed alpha.6 assurance delivery alignment in implementation:
+  added explicit `runectx assurance capture context-pack` for portable receipt
+  capture, integrated assurance artifact schema/integrity/linkage checks into
+  `runectx validate`, added generated receipt emission on verified `change close`
+  and `promote` mutations with fail-closed transactional writes, and finalized
+  portable assurance artifact paths at the project root `assurance/` tree
+  (including strict plain-vs-verified enforcement and imported-history schema
+  validation for backfill artifacts).
 
 ## MVP Definition
 
@@ -303,6 +317,9 @@ and coverage stay in one place.
 - Keep one shared machine-facing CLI envelope and failure taxonomy across
   commands; broaden thin wrappers rather than letting command-specific contracts
   drift apart.
+- Keep assurance artifacts aligned on the same flat envelope schema so schemas,
+  fixtures, and tooling all expose the same `schema_version`, `canonicalization`,
+  and receipt-specific fields.
 - Keep invalid-output path fields consistent across commands: `root` is the
   project root and `error_path` is the specific failing artifact path when
   present.

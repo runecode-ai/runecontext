@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "kind": "history",
+  "provenance": "imported_git_history",
+  "generated_at": 1710000010,
+  "adoption_commit": "abcdef1234567890abcdef1234567890abcdef12",
+  "commits": [
+    {
+      "commit": "1111111111111111111111111111111111111111",
+      "committed_at": 1709999900,
+      "author_name": "RuneContext Fixture",
+      "author_email": "fixture@example.com",
+      "subject": "initial import"
+    },
+    {
+      "commit": "abcdef1234567890abcdef1234567890abcdef12",
+      "committed_at": 1710000000,
+      "author_name": "RuneContext Fixture",
+      "author_email": "fixture@example.com",
+      "subject": "adoption point"
+    }
+  ]
+}

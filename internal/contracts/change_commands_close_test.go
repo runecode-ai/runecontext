@@ -19,6 +19,23 @@ func TestCloseChangeWritesClosedStatus(t *testing.T) {
 	assertClosedStatusFile(t, root, result.ID)
 }
 
+func TestCloseChangeVerifiedTierWritesAssuranceReceipt(t *testing.T) {
+	root := copyChangeWorkflowTemplate(t)
+	enableVerifiedTierForProject(t, root)
+	v, created := mustCreateDefaultFeatureChange(t, root)
+	closed := mustCloseChange(t, v, root, created.ID, ChangeCloseOptions{VerificationStatus: "passed", ClosedAt: time.Date(2026, time.March, 20, 0, 0, 0, 0, time.UTC)})
+
+	assertCreatedMutationWithPrefix(t, closed.ChangedFiles, "assurance/receipts/changes/")
+	receipt := readSingleFamilyReceipt(t, root, "changes")
+	assertReceiptEnvelopeFields(t, receipt, "changes/"+created.ID)
+	value := receiptValueMap(t, receipt)
+	assertReceiptFieldEquals(t, value, "receipt_family", "changes")
+	assertReceiptFieldEquals(t, value, "change_id", created.ID)
+	assertReceiptFieldEquals(t, value, "change_status", "closed")
+	assertReceiptFieldEquals(t, value, "verification_status", "passed")
+	assertValidatedWorkflowProject(t, v, root)
+}
+
 func assertClosedResultMetadata(t *testing.T, result *ChangeOperationResult) {
 	t.Helper()
 	if len(result.ContextBundles) != 1 || result.ContextBundles[0] != "base" {

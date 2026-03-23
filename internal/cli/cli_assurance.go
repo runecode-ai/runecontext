@@ -53,14 +53,30 @@ func runAssuranceEnable(args []string, stdout, stderr io.Writer) int {
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandUsageErrorLines("assurance enable", assuranceEnableUsage, err), machine), exitUsage, failureClassUsage)
 		return exitUsage
 	}
+	project, code := loadProjectOrReport(request.root, request.explicitRoot, stderr, "assurance enable", machine)
+	if code != exitOK {
+		return code
+	}
+	defer project.close()
+	resolvedRoot := projectRootForAssurance(project)
 	plans := []string{
-		fmt.Sprintf("update %s", filepath.Join(request.root, "runecontext.yaml")),
-		fmt.Sprintf("write %s", filepath.Join(request.root, "assurance", "baseline.yaml")),
+		fmt.Sprintf("update %s", filepath.Join(resolvedRoot, "runecontext.yaml")),
+		fmt.Sprintf("write %s", filepath.Join(resolvedRoot, "assurance", "baseline.yaml")),
 	}
 	if machine.dryRun {
-		return emitAssuranceEnableDryRun(stdout, stderr, machine, request.root, plans)
+		return emitAssuranceEnableDryRun(stdout, stderr, machine, resolvedRoot, plans)
 	}
-	return executeAssuranceEnable(stdout, stderr, machine, request.root)
+	return executeAssuranceEnable(stdout, stderr, machine, resolvedRoot)
+}
+
+func projectRootForAssurance(project *cliProject) string {
+	if project != nil && project.loaded != nil && project.loaded.Resolution != nil && project.loaded.Resolution.ProjectRoot != "" {
+		return project.loaded.Resolution.ProjectRoot
+	}
+	if project != nil {
+		return project.absRoot
+	}
+	return "."
 }
 
 func emitAssuranceEnableDryRun(stdout, stderr io.Writer, machine machineOptions, root string, plans []string) int {

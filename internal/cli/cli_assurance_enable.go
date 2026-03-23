@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -48,6 +49,8 @@ func newAssuranceEnableContext(root string) (*assuranceEnableContext, error) {
 	var priorBaseline []byte
 	if prev, err := os.ReadFile(baselinePath); err == nil {
 		priorBaseline = prev
+	} else if !os.IsNotExist(err) {
+		return nil, err
 	}
 	return &assuranceEnableContext{
 		configPath:    configPath,
@@ -112,7 +115,19 @@ func sourceSnapshotFields(rootCfg map[string]any) (string, string) {
 	if !ok {
 		return "", ""
 	}
-	return fmt.Sprint(source["commit"]), fmt.Sprint(source["type"])
+	adoptionCommit := readOptionalString(source, "commit")
+	if adoptionCommit == "" {
+		adoptionCommit = readOptionalString(source, "expect_commit")
+	}
+	return adoptionCommit, readOptionalString(source, "type")
+}
+
+func readOptionalString(values map[string]any, key string) string {
+	raw, ok := values[key]
+	if !ok || raw == nil {
+		return ""
+	}
+	return strings.TrimSpace(fmt.Sprint(raw))
 }
 
 func renderVerifiedTierConfig(configData []byte) ([]byte, error) {
@@ -129,7 +144,7 @@ func renderVerifiedTierConfig(configData []byte) ([]byte, error) {
 
 func emitAssuranceEnableError(stderr io.Writer, machine machineOptions, root string, err error) {
 	commandErr, rollbackErr := splitAssuranceEnableError(err)
-	if rollbackErr != nil {
+	if rollbackErr != nil && !machine.jsonOutput {
 		fmt.Fprintf(stderr, "Warning: failed to restore previous baseline: %v\n", rollbackErr)
 	}
 	errorLines := buildCommandInvalidLines("assurance enable", root, commandErr)
@@ -159,27 +174,4 @@ func (ctx *assuranceEnableContext) rollbackBaseline() error {
 		return writeAtomicFile(ctx.baselinePath, ctx.priorBaseline, 0o644)
 	}
 	return os.Remove(ctx.baselinePath)
-}
-
-func writeAtomicFile(path string, data []byte, perm os.FileMode) error {
-	dir := filepath.Dir(path)
-	tmp, err := os.CreateTemp(dir, "tmp-*")
-	if err != nil {
-		return err
-	}
-	tmpName := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	if err := os.Chmod(tmpName, perm); err != nil {
-		os.Remove(tmpName)
-		return err
-	}
-	return os.Rename(tmpName, path)
 }

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -101,12 +102,111 @@ func TestRunAssuranceEnablePreservesConfig(t *testing.T) {
 
 func writeAssuranceConfigFixture(t *testing.T, root string) string {
 	t.Helper()
-	content := "# top comment\nschema_version: 1\nrunecontext_version: 0.1.0-alpha.3\nassurance_tier: plain\nsource:\n  type: embedded\n# tail comment\n"
+	content := "# top comment\nschema_version: 1\nrunecontext_version: 0.1.0-alpha.3\nassurance_tier: plain\nsource:\n  type: embedded\n  path: runecontext\n# tail comment\n"
 	configPath := filepath.Join(root, "runecontext.yaml")
 	if err := os.WriteFile(configPath, []byte(content), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
 	}
+	if err := os.MkdirAll(filepath.Join(root, "runecontext"), 0o755); err != nil {
+		t.Fatalf("mkdir embedded source path: %v", err)
+	}
 	return configPath
+}
+
+func TestRunAssuranceEnableUsesNearestAncestorDiscovery(t *testing.T) {
+	root := writeDiscoveryFixtureProject(t)
+	nested := filepath.Join(root, "internal")
+	t.Chdir(nested)
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"assurance", "enable", "verified"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("expected success, got %d (%s)", code, stderr.String())
+	}
+	configPath := filepath.Join(root, "runecontext.yaml")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	if !strings.Contains(string(data), "assurance_tier: verified") {
+		t.Fatalf("tier not updated: %s", string(data))
+	}
+	if _, err := os.Stat(filepath.Join(root, "assurance", "baseline.yaml")); err != nil {
+		t.Fatalf("expected baseline at discovered project root: %v", err)
+	}
+}
+
+func writeDiscoveryFixtureProject(t *testing.T) string {
+	t.Helper()
+	repoRoot, err := repoRootForTests()
+	if err != nil {
+		t.Fatal(err)
+	}
+	projectRoot, err := os.MkdirTemp(repoRoot, "assurance-discovery-*")
+	if err != nil {
+		t.Fatalf("mkdir temp project root: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(projectRoot) })
+	root := filepath.Join(projectRoot, "packages", "service")
+	if err := os.MkdirAll(filepath.Join(root, "internal"), 0o755); err != nil {
+		t.Fatalf("mkdir nested: %v", err)
+	}
+	config := "schema_version: 1\nrunecontext_version: 0.1.0-alpha.3\nassurance_tier: plain\nsource:\n  type: embedded\n  path: service-context\n"
+	if err := os.WriteFile(filepath.Join(root, "runecontext.yaml"), []byte(config), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(root, "service-context"), 0o755); err != nil {
+		t.Fatalf("mkdir embedded source: %v", err)
+	}
+	return root
+}
+
+func TestRunAssuranceEnableFailsWhenExistingBaselineUnreadable(t *testing.T) {
+	root := t.TempDir()
+	_ = writeAssuranceConfigFixture(t, root)
+	baselinePath := filepath.Join(root, "assurance", "baseline.yaml")
+	if err := os.MkdirAll(baselinePath, 0o755); err != nil {
+		t.Fatalf("make unreadable baseline path: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"assurance", "enable", "verified", "--path", root}, &stdout, &stderr)
+	if code != exitInvalid {
+		t.Fatalf("expected invalid exit for unreadable existing baseline, got %d (%s)", code, stderr.String())
+	}
+}
+
+func TestEmitAssuranceEnableErrorJSONModeSuppressesWarning(t *testing.T) {
+	var stderr bytes.Buffer
+	machine := machineOptions{jsonOutput: true}
+	err := &assuranceEnableError{err: fmt.Errorf("write failed"), rollbackErr: fmt.Errorf("rollback failed")}
+	emitAssuranceEnableError(&stderr, machine, "/tmp/project", err)
+
+	text := stderr.String()
+	if strings.Contains(text, "Warning:") {
+		t.Fatalf("expected no human warning in json mode, got %q", text)
+	}
+	if !strings.Contains(text, "rollback_error") {
+		t.Fatalf("expected rollback error in structured output, got %q", text)
+	}
+}
+
+func TestSourceSnapshotFieldsUsesExpectCommitFallback(t *testing.T) {
+	rootCfg := map[string]any{
+		"source": map[string]any{
+			"type":          "git",
+			"expect_commit": "1234567890abcdef1234567890abcdef12345678",
+		},
+	}
+	commit, posture := sourceSnapshotFields(rootCfg)
+	if commit != "1234567890abcdef1234567890abcdef12345678" {
+		t.Fatalf("unexpected adoption commit %q", commit)
+	}
+	if posture != "git" {
+		t.Fatalf("unexpected source posture %q", posture)
+	}
 }
 
 func assertVerifiedConfigPreserved(t *testing.T, configPath string) {

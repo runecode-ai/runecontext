@@ -1069,7 +1069,9 @@ monster, alpha.6 work is grouped into the following recommended branch cuts.
 - [ ] Issue: implement a shared assurance artifact envelope for baselines and
   receipt families, including artifact kind, stable subject identity, creation
   metadata, deterministic hashing/canonicalization metadata where applicable,
-  and explicit provenance-class support.
+  explicit provenance-class support, the same flat envelope field layout across
+  artifacts (no nested envelope object for receipts), and matching golden fixtures
+  under `fixtures/assurance/golden`.
 - [ ] Issue: implement generated baseline artifact shape and baseline creation,
   including adoption commit, resolved source posture, and attachment points for
   imported historical evidence.
@@ -1091,6 +1093,9 @@ monster, alpha.6 work is grouped into the following recommended branch cuts.
   deployment-specific local metadata for correctness.
 - [ ] Issue: add tests for merge-safe receipt generation and collision-resistant
   file naming.
+- All assurance envelopes and receipts canonicalize with the RuneContext-owned
+  token `runecontext-canonical-json-v1`; the fixtures under `fixtures/assurance`
+  demonstrate the resulting flat-envelope JSON shape and hash inputs.
 
 ### Recommended Branch Cut 2: Verified enablement and explicit receipt integration
 

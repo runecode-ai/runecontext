@@ -303,6 +303,9 @@ and coverage stay in one place.
 - Keep one shared machine-facing CLI envelope and failure taxonomy across
   commands; broaden thin wrappers rather than letting command-specific contracts
   drift apart.
+- Keep assurance artifacts aligned on the same flat envelope schema so schemas,
+  fixtures, and tooling all expose the same `schema_version`, `canonicalization`,
+  and receipt-specific fields.
 - Keep invalid-output path fields consistent across commands: `root` is the
   project root and `error_path` is the specific failing artifact path when
   present.

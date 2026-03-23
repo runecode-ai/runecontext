@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "kind": "receipt",
-  "subject_id": "context-pack",
+  "subject_id": "context-packs/abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd",
   "created_at": 1710000005,
   "canonicalization": "runecontext-canonical-json-v1",
   "receipt_id": "context-packs-abc12345-1710000005-0123456789ab",

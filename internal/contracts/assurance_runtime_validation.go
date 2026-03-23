@@ -10,7 +10,7 @@ import (
 func loadProjectAssuranceArtifacts(v *Validator, index *ProjectIndex, projectRoot string, rootConfig map[string]any) error {
 	tier := strings.TrimSpace(fmt.Sprint(rootConfig["assurance_tier"]))
 	baselinePath := filepath.Join(projectRoot, "assurance", "baseline.yaml")
-	if err := loadAssuranceBaselineForTier(v, index, baselinePath, tier); err != nil {
+	if err := loadAssuranceBaselineForTier(v, index, projectRoot, baselinePath, tier); err != nil {
 		return err
 	}
 	if err := ensureAssuranceReceiptsAllowed(projectRoot, tier); err != nil {
@@ -25,7 +25,7 @@ func loadProjectAssuranceArtifacts(v *Validator, index *ProjectIndex, projectRoo
 	return validateAssuranceBackfill(v, index, projectRoot)
 }
 
-func loadAssuranceBaselineForTier(v *Validator, index *ProjectIndex, baselinePath, tier string) error {
+func loadAssuranceBaselineForTier(v *Validator, index *ProjectIndex, projectRoot, baselinePath, tier string) error {
 	baselineExists, err := assuranceFileExists(baselinePath)
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func loadAssuranceBaselineForTier(v *Validator, index *ProjectIndex, baselinePat
 	if tier != AssuranceTierVerified {
 		return &ValidationError{Path: baselinePath, Message: "assurance baseline exists but assurance_tier is not verified"}
 	}
-	return loadAssuranceBaseline(v, index, baselinePath)
+	return loadAssuranceBaseline(v, index, projectRoot, baselinePath)
 }
 
 func ensureAssuranceReceiptsAllowed(projectRoot, tier string) error {
@@ -59,8 +59,8 @@ func ensureAssuranceReceiptsAllowed(projectRoot, tier string) error {
 	return nil
 }
 
-func loadAssuranceBaseline(v *Validator, index *ProjectIndex, baselinePath string) error {
-	data, err := readProjectFile(filepath.Dir(baselinePath), baselinePath)
+func loadAssuranceBaseline(v *Validator, index *ProjectIndex, projectRoot, baselinePath string) error {
+	data, err := readProjectFile(projectRoot, baselinePath)
 	if err != nil {
 		return err
 	}

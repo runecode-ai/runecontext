@@ -2,11 +2,15 @@ package contracts
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 type fakeFileInfo struct {
@@ -199,4 +203,141 @@ func containsMutation(items []FileMutation, path, action string) bool {
 		}
 	}
 	return false
+}
+
+func enableVerifiedTierForProject(t *testing.T, root string) {
+	t.Helper()
+	writeVerifiedAssuranceTierConfig(t, root)
+	writeDefaultAssuranceBaseline(t, root)
+}
+
+func writeDefaultAssuranceBaseline(t *testing.T, root string) {
+	t.Helper()
+	writeAssuranceBaselineEnvelope(t, root, AssuranceEnvelope{
+		SchemaVersion:    1,
+		Kind:             "baseline",
+		SubjectID:        "project-root",
+		CreatedAt:        1710000000,
+		Canonicalization: AssuranceCanonicalizationToken,
+		Value: map[string]any{
+			"adoption_commit": "abcdef1234567890abcdef1234567890abcdef12",
+			"source_posture":  "embedded",
+		},
+	})
+}
+
+func writeAssuranceBaselineEnvelope(t *testing.T, root string, envelope AssuranceEnvelope) {
+	t.Helper()
+	data, err := yaml.Marshal(envelope)
+	if err != nil {
+		t.Fatalf("marshal baseline: %v", err)
+	}
+	baselinePath := filepath.Join(root, "assurance", "baseline.yaml")
+	if err := os.MkdirAll(filepath.Dir(baselinePath), 0o755); err != nil {
+		t.Fatalf("mkdir baseline dir: %v", err)
+	}
+	if err := os.WriteFile(baselinePath, data, 0o644); err != nil {
+		t.Fatalf("write baseline: %v", err)
+	}
+}
+
+func requireSingleAssuranceReceiptPath(t *testing.T, root, family string) string {
+	t.Helper()
+	receiptsDir := filepath.Join(root, "assurance", "receipts", family)
+	entries, err := os.ReadDir(receiptsDir)
+	if err != nil {
+		t.Fatalf("read receipts dir %s: %v", receiptsDir, err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("expected one %s receipt, got %d", family, len(entries))
+	}
+	return filepath.Join(receiptsDir, entries[0].Name())
+}
+
+func readAssuranceReceipt(t *testing.T, path string) ReceiptArtifact {
+	t.Helper()
+	var artifact ReceiptArtifact
+	if err := json.Unmarshal(mustReadBytes(t, path), &artifact); err != nil {
+		t.Fatalf("unmarshal receipt %s: %v", path, err)
+	}
+	return artifact
+}
+
+func receiptValueMap(t *testing.T, artifact ReceiptArtifact) map[string]any {
+	t.Helper()
+	value, ok := artifact.Value.(map[string]any)
+	if !ok {
+		t.Fatalf("receipt value must be object, got %#v", artifact.Value)
+	}
+	return value
+}
+
+func requireReceiptFieldString(t *testing.T, value map[string]any, key string) string {
+	t.Helper()
+	raw, ok := value[key]
+	if !ok {
+		t.Fatalf("receipt value missing %q", key)
+	}
+	field := strings.TrimSpace(fmt.Sprint(raw))
+	if field == "" {
+		t.Fatalf("receipt value field %q must be non-empty", key)
+	}
+	return field
+}
+
+func receiptStringSlice(raw any) []string {
+	items, ok := raw.([]any)
+	if !ok {
+		return nil
+	}
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		str, ok := item.(string)
+		if !ok {
+			continue
+		}
+		result = append(result, str)
+	}
+	return result
+}
+
+func assertCreatedMutationWithPrefix(t *testing.T, items []FileMutation, pathPrefix string) {
+	t.Helper()
+	for _, item := range items {
+		if item.Action == "created" && strings.HasPrefix(item.Path, pathPrefix) {
+			return
+		}
+	}
+	t.Fatalf("expected created mutation with prefix %q, got %#v", pathPrefix, items)
+}
+
+func readSingleFamilyReceipt(t *testing.T, root, family string) ReceiptArtifact {
+	t.Helper()
+	return readAssuranceReceipt(t, requireSingleAssuranceReceiptPath(t, root, family))
+}
+
+func assertReceiptEnvelopeFields(t *testing.T, receipt ReceiptArtifact, subjectID string) {
+	t.Helper()
+	if receipt.Kind != "receipt" {
+		t.Fatalf("expected receipt kind %q, got %q", "receipt", receipt.Kind)
+	}
+	if receipt.SubjectID != subjectID {
+		t.Fatalf("expected receipt subject_id %q, got %q", subjectID, receipt.SubjectID)
+	}
+	if receipt.Canonicalization != AssuranceCanonicalizationToken {
+		t.Fatalf("expected canonicalization %q, got %q", AssuranceCanonicalizationToken, receipt.Canonicalization)
+	}
+	if receipt.Provenance != "captured_verified" {
+		t.Fatalf("expected provenance %q, got %q", "captured_verified", receipt.Provenance)
+	}
+	if strings.TrimSpace(receipt.ReceiptID) == "" || strings.TrimSpace(receipt.ReceiptHash) == "" {
+		t.Fatalf("expected receipt_id and receipt_hash to be present, got %#v", receipt)
+	}
+}
+
+func assertReceiptFieldEquals(t *testing.T, value map[string]any, key, want string) {
+	t.Helper()
+	if got := requireReceiptFieldString(t, value, key); got != want {
+		t.Fatalf("expected value.%s %q, got %q", key, want, got)
+	}
 }

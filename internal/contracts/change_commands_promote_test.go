@@ -42,6 +42,34 @@ func TestPromoteChangeAcceptWritesStatus(t *testing.T) {
 	}
 }
 
+func TestPromoteChangeVerifiedTierWritesAssuranceReceipt(t *testing.T) {
+	root := copyChangeWorkflowTemplate(t)
+	enableVerifiedTierForProject(t, root)
+	v, created := mustCreateChange(t, root, ChangeCreateOptions{
+		Title:          "Refine base standard wording",
+		Type:           "standard",
+		ContextBundles: []string{"base"},
+		Now:            time.Date(2026, time.March, 18, 0, 0, 0, 0, time.UTC),
+		Entropy:        strings.NewReader("abcf"),
+	})
+	mustCloseChange(t, v, root, created.ID, ChangeCloseOptions{VerificationStatus: "passed", ClosedAt: time.Date(2026, time.March, 20, 0, 0, 0, 0, time.UTC)})
+
+	result := mustPromoteChange(t, v, root, created.ID, PromoteOptions{})
+	assertCreatedMutationWithPrefix(t, result.ChangedFiles, "assurance/receipts/promotions/")
+	receipt := readSingleFamilyReceipt(t, root, "promotions")
+	assertReceiptEnvelopeFields(t, receipt, "changes/"+created.ID)
+	value := receiptValueMap(t, receipt)
+	assertReceiptFieldEquals(t, value, "receipt_family", "promotions")
+	assertReceiptFieldEquals(t, value, "change_id", created.ID)
+	assertReceiptFieldEquals(t, value, "promotion_status", "accepted")
+	assertReceiptFieldEquals(t, value, "change_lifecycle", "closed")
+	targets := receiptStringSlice(value["promotion_targets"])
+	if len(targets) == 0 {
+		t.Fatalf("expected non-empty value.promotion_targets, got %#v", value["promotion_targets"])
+	}
+	assertValidatedWorkflowProject(t, v, root)
+}
+
 func TestPromoteChangeCompleteWritesStatus(t *testing.T) {
 	root := copyChangeWorkflowTemplate(t)
 	v, created := mustCreateChange(t, root, ChangeCreateOptions{

@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"reflect"
-	"strings"
 	"unicode/utf8"
 )
 
@@ -41,109 +40,6 @@ func ComputeArtifactCanonicalJSON(obj any) (string, error) {
 		return "", fmt.Errorf("canonical json marshal: %w", err)
 	}
 	return string(b), nil
-}
-
-func canonicalize(v any) any {
-	switch t := v.(type) {
-	case map[string]any:
-		out := make(map[string]any, len(t))
-		for k, val := range t {
-			out[k] = canonicalize(val)
-		}
-		return out
-	case []any:
-		out := make([]any, len(t))
-		for i := range t {
-			out[i] = canonicalize(t[i])
-		}
-		return out
-	case string:
-		return t
-	}
-	rv := indirect(reflect.ValueOf(v))
-	switch rv.Kind() {
-	case reflect.Map:
-		if rv.Type().Key().Kind() == reflect.String {
-			m := make(map[string]any, rv.Len())
-			for _, key := range rv.MapKeys() {
-				m[key.String()] = canonicalize(rv.MapIndex(key).Interface())
-			}
-			return m
-		}
-	case reflect.Array, reflect.Slice:
-		length := rv.Len()
-		arr := make([]any, length)
-		for i := 0; i < length; i++ {
-			arr[i] = canonicalize(rv.Index(i).Interface())
-		}
-		return arr
-	case reflect.Struct:
-		return canonicalizeStruct(rv)
-	case reflect.String:
-		return rv.String()
-	}
-	return v
-}
-
-func canonicalizeStruct(rv reflect.Value) any {
-	result := make(map[string]any)
-	rt := rv.Type()
-	for i := 0; i < rt.NumField(); i++ {
-		field := rt.Field(i)
-		if field.PkgPath != "" && !field.Anonymous {
-			continue
-		}
-		value := rv.Field(i)
-		if err := ensureFieldExported(value); err != nil {
-			continue
-		}
-		name := field.Name
-		if jsonName, ok := jsonFieldName(field); ok && jsonName != "" {
-			name = jsonName
-		}
-		if field.Anonymous {
-			nested := canonicalize(value.Interface())
-			if nestedMap, ok := nested.(map[string]any); ok {
-				for k, v := range nestedMap {
-					result[k] = v
-				}
-			}
-			continue
-		}
-		result[name] = canonicalize(value.Interface())
-	}
-	return result
-}
-
-func ensureFieldExported(value reflect.Value) error {
-	if !value.CanInterface() {
-		return fmt.Errorf("unexported field")
-	}
-	return nil
-}
-
-func jsonFieldName(field reflect.StructField) (string, bool) {
-	tag := field.Tag.Get("json")
-	if tag == "-" {
-		return "", false
-	}
-	if tag != "" {
-		parts := strings.Split(tag, ",")
-		if parts[0] != "" {
-			return parts[0], true
-		}
-	}
-	return field.Name, true
-}
-
-func indirect(rv reflect.Value) reflect.Value {
-	for rv.Kind() == reflect.Interface || rv.Kind() == reflect.Pointer {
-		if rv.IsNil() {
-			return rv
-		}
-		rv = rv.Elem()
-	}
-	return rv
 }
 
 func ensureUTF8Strings(v any) error {

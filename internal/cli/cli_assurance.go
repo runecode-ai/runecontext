@@ -84,7 +84,6 @@ func runAssuranceBackfill(args []string, stdout, stderr io.Writer) int {
 }
 
 func runAssuranceBackfillWithMachine(args []string, stdout, stderr io.Writer, machine machineOptions) int {
-	_ = stdout
 	if machine.dryRun {
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandUsageErrorLines("assurance backfill", assuranceBackfillUsage, fmt.Errorf("--dry-run is not supported for assurance backfill")), machine), exitUsage, failureClassUsage)
 		return exitUsage
@@ -94,22 +93,47 @@ func runAssuranceBackfillWithMachine(args []string, stdout, stderr io.Writer, ma
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandUsageErrorLines("assurance backfill", assuranceBackfillUsage, err), machine), exitUsage, failureClassUsage)
 		return exitUsage
 	}
-	msg := "assurance backfill is not implemented yet"
-	lines := []line{
-		{"result", "not_implemented"},
+	project, code := loadProjectOrReport(request.root, request.explicitRoot, stderr, "assurance backfill", machine)
+	if code != exitOK {
+		return code
+	}
+	defer project.close()
+	resolvedRoot := projectRootForAssurance(project)
+	result, err := executeAssuranceBackfill(resolvedRoot)
+	if err != nil {
+		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines("assurance backfill", resolvedRoot, err), machine), exitInvalid, failureClassInvalid)
+		return exitInvalid
+	}
+	return emitAssuranceBackfillSuccess(stdout, stderr, machine, resolvedRoot, result)
+}
+
+func emitAssuranceBackfillSuccess(stdout, stderr io.Writer, machine machineOptions, root string, result assuranceBackfillResult) int {
+	output := []line{
+		{"result", "ok"},
 		{"command", "assurance backfill"},
-		{"root", request.root},
-		{"error_message", msg},
+		{"root", root},
+		{"baseline_path", result.baselinePath},
+		{"history_path", result.historyPath},
+		{"adoption_commit", result.adoptionCommit},
+		{"history_commit_count", fmt.Sprintf("%d", result.commitCount)},
+	}
+	if result.importedAdded {
+		output = append(output, line{"imported_evidence_added", "true"})
+	} else {
+		output = append(output, line{"imported_evidence_added", "false"})
 	}
 	if machine.explain {
-		lines = append(lines, line{"explain_scope", "deferred-command"})
-		lines = append(lines, line{"explain_backfill_status", "deferred_to_branch_cut_3"})
+		output = append(output,
+			line{"explain_scope", "assurance-backfill"},
+			line{"explain_provenance_class", "imported_git_history"},
+			line{"explain_receipts_mutation", "none"},
+		)
 	}
-	emitOutput(stderr, machine, appendMachineOptionLines(lines, machine), exitUsage, failureClassUsage)
+	emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 	if !machine.jsonOutput {
-		fmt.Fprintln(stderr, msg)
+		fmt.Fprintf(stderr, "Backfilled imported git history at %s and updated %s\n", result.historyPath, result.baselinePath)
 	}
-	return exitUsage
+	return exitOK
 }
 
 func projectRootForAssurance(project *cliProject) string {

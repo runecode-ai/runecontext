@@ -5,6 +5,7 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/runecode-systems/runecontext/internal/contracts"
 )
@@ -66,13 +67,28 @@ func runBundleResolve(args []string, machine machineOptions, stdout, stderr io.W
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines(bundleResolveCommand, project.absRoot, err), machine), exitInvalid, failureClassInvalid)
 		return exitInvalid
 	}
+	report, err := buildBundleResolveContextPackReport(index, request.bundleIDs, machine.explain)
+	if err != nil {
+		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines(bundleResolveCommand, project.absRoot, err), machine), exitInvalid, failureClassInvalid)
+		return exitInvalid
+	}
 	diagnostics := collectDiagnostics(index)
-	output := buildBundleResolveOutput(project.absRoot, project.loaded, request, resolution, diagnostics)
+	output := buildBundleResolveOutput(project.absRoot, project.loaded, request, resolution, report, diagnostics)
 	if machine.explain {
-		output = appendBundleResolveExplainLines(output, project.loaded, resolution, diagnostics)
+		output = appendBundleResolveExplainLines(output, project.loaded, resolution, report, diagnostics)
 	}
 	emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 	return exitOK
+}
+
+func buildBundleResolveContextPackReport(index *contracts.ProjectIndex, bundleIDs []string, explain bool) (*contracts.ContextPackReport, error) {
+	return index.BuildContextPackReport(contracts.ContextPackReportOptions{
+		ContextPackOptions: contracts.ContextPackOptions{
+			BundleIDs:   append([]string(nil), bundleIDs...),
+			GeneratedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+		},
+		Explain: explain,
+	})
 }
 
 func parseBundleResolveArgs(args []string) (bundleResolveRequest, error) {
@@ -170,50 +186,6 @@ func parseDoctorArgs(args []string) (doctorRequest, error) {
 		request.explicitRoot = true
 	}
 	return request, nil
-}
-
-func buildBundleResolveOutput(absRoot string, loaded *contracts.LoadedProject, request bundleResolveRequest, resolution *contracts.BundleResolution, diagnostics []emittedDiagnostic) []line {
-	output := []line{
-		{"result", "ok"},
-		{"command", bundleResolveCommand},
-		{"root", absRoot},
-		{"selected_config_path", selectedConfigPath(loaded)},
-	}
-	if loaded != nil && loaded.Resolution != nil {
-		output = append(output,
-			line{"project_root", loaded.Resolution.ProjectRoot},
-			line{"source_root", loaded.Resolution.SourceRoot},
-			line{"source_mode", string(loaded.Resolution.SourceMode)},
-		)
-	}
-	output = append(output, line{"requested_bundle_count", fmt.Sprintf("%d", len(request.bundleIDs))})
-	output = appendStringItems(output, "requested_bundle", request.bundleIDs)
-	if resolution != nil {
-		output = append(output,
-			line{"bundle_resolution_id", resolution.ID},
-			line{"resolved_bundle_count", fmt.Sprintf("%d", len(resolution.Linearization))},
-		)
-		output = appendStringItems(output, "resolved_bundle", resolution.Linearization)
-	}
-	output = append(output, line{"diagnostic_count", fmt.Sprintf("%d", len(diagnostics))})
-	return appendValidateDiagnosticLines(output, diagnostics)
-}
-
-func appendBundleResolveExplainLines(lines []line, loaded *contracts.LoadedProject, resolution *contracts.BundleResolution, diagnostics []emittedDiagnostic) []line {
-	lines = append(lines,
-		line{"explain_scope", "resolution,bundle-linearization"},
-		line{"explain_diagnostic_count", fmt.Sprintf("%d", len(diagnostics))},
-	)
-	if loaded != nil && loaded.Resolution != nil {
-		lines = append(lines,
-			line{"explain_resolution_source_mode", string(loaded.Resolution.SourceMode)},
-			line{"explain_resolution_selected_config_path", loaded.Resolution.SelectedConfigPath},
-		)
-	}
-	if resolution != nil {
-		lines = append(lines, line{"explain_resolved_bundle_count", fmt.Sprintf("%d", len(resolution.Linearization))})
-	}
-	return lines
 }
 
 func buildDoctorOutput(absRoot string, loaded *contracts.LoadedProject, diagnostics []emittedDiagnostic, warnings []string) []line {

@@ -52,6 +52,32 @@ func TestRunBundleResolveSuccess(t *testing.T) {
 	if got, want := fields["resolved_bundle_2"], "child-reinclude"; got != want {
 		t.Fatalf("expected resolved bundle child-reinclude, got %q", got)
 	}
+	if fields["context_pack_hash"] == "" {
+		t.Fatalf("expected context_pack_hash in output, got %#v", fields)
+	}
+	if got, want := fields["context_pack_report_schema_version"], "1"; got != want {
+		t.Fatalf("expected report schema version %q, got %q", want, got)
+	}
+	if got, want := fields["context_pack_id"], "child-reinclude"; got != want {
+		t.Fatalf("expected context_pack_id %q, got %q", want, got)
+	}
+}
+
+func TestRunBundleResolveExplainIncludesContextPackFields(t *testing.T) {
+	projectRoot := repoFixtureRoot(t, "bundle-resolution", "valid-project")
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"bundle", "resolve", "--explain", "child-reinclude", "--path", projectRoot}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if !strings.Contains(fields["explain_scope"], "context-pack-report") {
+		t.Fatalf("expected context-pack explain scope, got %#v", fields)
+	}
+	if fields["explain_context_pack_warning_count"] == "" {
+		t.Fatalf("expected explain_context_pack_warning_count, got %#v", fields)
+	}
 }
 
 func TestRunDoctorSuccess(t *testing.T) {

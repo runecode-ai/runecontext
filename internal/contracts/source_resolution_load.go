@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -90,6 +91,14 @@ func validateRootSourceShape(configPath string, rootData []byte) error {
 }
 
 func (v *Validator) ValidateLoadedProject(loaded *LoadedProject) (*ProjectIndex, error) {
+	return v.validateLoadedProjectWithGeneratedIndexValidation(loaded, true)
+}
+
+func (v *Validator) ValidateLoadedProjectAllowMalformedGeneratedIndexes(loaded *LoadedProject) (*ProjectIndex, error) {
+	return v.validateLoadedProjectWithGeneratedIndexValidation(loaded, false)
+}
+
+func (v *Validator) validateLoadedProjectWithGeneratedIndexValidation(loaded *LoadedProject, validateGeneratedIndexes bool) (*ProjectIndex, error) {
 	contentRoot, rootConfigPath, rootData, rootConfig, projectRoot, err := validateLoadedProjectInputs(loaded)
 	if err != nil {
 		return nil, err
@@ -104,10 +113,42 @@ func (v *Validator) ValidateLoadedProject(loaded *LoadedProject) (*ProjectIndex,
 	if err := validateResolvedStatusFiles(v, index, rootConfigPath, rootData); err != nil {
 		return nil, err
 	}
+	if validateGeneratedIndexes {
+		if err := validateGeneratedIndexesIfPresent(v, index); err != nil {
+			return nil, err
+		}
+	}
 	if err := validateResolvedProjectReferences(index); err != nil {
 		return nil, err
 	}
 	return index, nil
+}
+
+func validateGeneratedIndexesIfPresent(v *Validator, index *ProjectIndex) error {
+	if v == nil || index == nil {
+		return nil
+	}
+	for _, artifact := range []struct {
+		relativePath string
+		schema       string
+	}{
+		{relativePath: generatedManifestRelativePath, schema: "manifest.schema.json"},
+		{relativePath: generatedChangesIndexRelativePath, schema: "changes-by-status-index.schema.json"},
+		{relativePath: generatedBundlesIndexRelativePath, schema: "bundles-index.schema.json"},
+	} {
+		path := filepath.Join(index.ContentRoot, filepath.FromSlash(artifact.relativePath))
+		data, err := os.ReadFile(path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return &ValidationError{Path: path, Message: err.Error()}
+		}
+		if err := v.ValidateYAMLFile(artifact.schema, path, data); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func validateLoadedProjectInputs(loaded *LoadedProject) (string, string, []byte, map[string]any, string, error) {

@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -56,10 +57,38 @@ func TestCompletionScriptsGolden(t *testing.T) {
 			if err != nil {
 				t.Fatalf("read golden completion script: %v", err)
 			}
-			if string(expected) != stdout.String() {
+			if normalizeNewlines(string(expected)) != normalizeNewlines(stdout.String()) {
 				t.Fatalf("unexpected completion script for %s\nexpected:\n%s\nactual:\n%s", shell, string(expected), stdout.String())
 			}
 		})
+	}
+}
+
+type errWriter struct{ err error }
+
+func (w errWriter) Write([]byte) (int, error) {
+	return 0, w.err
+}
+
+func TestRunCompletionWriteFailureOmitsRoot(t *testing.T) {
+	var stderr bytes.Buffer
+	wantErr := errors.New("write failed")
+
+	code := Run([]string{"completion", "bash"}, errWriter{err: wantErr}, &stderr)
+	if code != exitInvalid {
+		t.Fatalf("expected invalid exit code, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "result=invalid") {
+		t.Fatalf("expected invalid result output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "command=completion") {
+		t.Fatalf("expected completion command output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "error_message=write failed") {
+		t.Fatalf("expected write failure output, got %q", stderr.String())
+	}
+	if strings.Contains(stderr.String(), "root=") {
+		t.Fatalf("expected completion invalid output to omit root, got %q", stderr.String())
 	}
 }
 
@@ -244,4 +273,9 @@ func flattenCommands(commands []CommandMetadata) []CommandMetadata {
 		items = append(items, flattenCommands(command.Subcommands)...)
 	}
 	return items
+}
+
+func normalizeNewlines(value string) string {
+	value = strings.ReplaceAll(value, "\r\n", "\n")
+	return strings.ReplaceAll(value, "\r", "\n")
 }

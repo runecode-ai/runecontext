@@ -32,7 +32,7 @@ func runCompletion(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	if _, err := io.WriteString(stdout, script); err != nil {
-		writeCommandInvalid(stderr, "completion", ".", err)
+		writeCommandInvalid(stderr, "completion", "", err)
 		return exitInvalid
 	}
 	return exitOK

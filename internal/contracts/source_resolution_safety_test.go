@@ -241,6 +241,13 @@ func TestParseTrustedSSHVerifyTagOutputRejectsUnexpectedFingerprintPrefix(t *tes
 	}
 }
 
+func TestClassifySignedTagFailureTreatsNoPubKeyAsVerificationFailed(t *testing.T) {
+	reason := classifySignedTagFailure("[GNUPG:] NO_PUBKEY E7FC845B7B27F99D")
+	if reason != SignedTagFailureVerificationFailed {
+		t.Fatalf("expected verification_failed classification, got %q", reason)
+	}
+}
+
 func TestSanitizeGitMessageRedactsMultipleIdentityTokensAndSCPLikeHost(t *testing.T) {
 	message := "fetch failed for git@github.com:runecode-systems/runecontext and admin@example.org and trailing user@"
 	sanitized := sanitizeGitMessage(message)

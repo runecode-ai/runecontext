@@ -49,6 +49,9 @@ func loadValidatedRootConfig(v *Validator, configPath string) ([]byte, map[strin
 	if err != nil {
 		return nil, nil, &ValidationError{Path: configPath, Message: err.Error()}
 	}
+	if err := validateRootSourceShape(configPath, rootData); err != nil {
+		return nil, nil, err
+	}
 	if err := v.ValidateYAMLFile("runecontext.schema.json", configPath, rootData); err != nil {
 		return nil, nil, err
 	}
@@ -61,6 +64,29 @@ func loadValidatedRootConfig(v *Validator, configPath string) ([]byte, map[strin
 		return nil, nil, err
 	}
 	return rootData, rootConfig, nil
+}
+
+func validateRootSourceShape(configPath string, rootData []byte) error {
+	parsed, err := parseYAML(rootData)
+	if err != nil {
+		return &ValidationError{Path: configPath, Message: err.Error()}
+	}
+	rootMap, err := expectObject(configPath, parsed, "root config")
+	if err != nil {
+		return err
+	}
+	sourceMap, ok := rootMap["source"].(map[string]any)
+	if !ok {
+		return nil
+	}
+	if _, hasSignedTag := sourceMap["signed_tag"]; !hasSignedTag {
+		return nil
+	}
+	expectCommit, ok := sourceMap["expect_commit"]
+	if !ok || strings.TrimSpace(fmt.Sprint(expectCommit)) != "" {
+		return nil
+	}
+	return &ValidationError{Path: configPath, Message: "git expect_commit must not be empty"}
 }
 
 func (v *Validator) ValidateLoadedProject(loaded *LoadedProject) (*ProjectIndex, error) {

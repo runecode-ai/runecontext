@@ -368,6 +368,31 @@ func TestRunValidateSignedTagFailureOutputsStructuredReason(t *testing.T) {
 	}
 }
 
+func TestRunValidateSignedTagEmptyExpectCommitFailsClearly(t *testing.T) {
+	repoRoot, err := repoRootForTests()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(repoRoot)
+
+	repoDir, details := createSignedGitSourceRepoForCLI(t)
+	projectRoot := t.TempDir()
+	config := fmt.Sprintf("schema_version: 1\nrunecontext_version: 0.1.0-alpha.3\nassurance_tier: plain\nsource:\n  type: git\n  url: %s\n  signed_tag: %s\n  expect_commit: \"\"\n  subdir: runecontext\n", repoDir, details.signedTagName)
+	if err := os.WriteFile(filepath.Join(projectRoot, "runecontext.yaml"), []byte(config), 0o644); err != nil {
+		t.Fatalf("write root config: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"validate", projectRoot}, &stdout, &stderr)
+	if code != 1 {
+		t.Fatalf("expected invalid exit code, got %d (%s)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "git expect_commit must not be empty") {
+		t.Fatalf("expected explicit empty expect_commit error, got %q", stderr.String())
+	}
+}
+
 func TestRunValidateFailure(t *testing.T) {
 	root := fixtureRoot(t, "reject-change-missing-related-spec")
 	var stdout bytes.Buffer

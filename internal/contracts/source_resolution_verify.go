@@ -20,10 +20,42 @@ func (v *SSHAllowedSignersVerifier) VerifySignedTag(repoRoot, tagName string) (*
 	if verification, err := trustedTagVerificationFromResult(tagName, result); verification != nil || err != nil {
 		return verification, err
 	}
+	if v.tagIsUnsigned(repoRoot, tagName) {
+		reason := SignedTagFailureUnsignedTag
+		message := signedTagFailureMessage(tagName, reason, "")
+		return nil, &SignedTagVerificationError{Tag: tagName, Reason: reason, Message: message, Diagnostics: []ResolutionDiagnostic{{Severity: DiagnosticSeverityError, Code: string(reason), Message: message}}}
+	}
 	output := strings.TrimSpace(result.Output)
 	reason := classifySignedTagFailure(output)
 	message := signedTagFailureMessage(tagName, reason, output)
 	return nil, &SignedTagVerificationError{Tag: tagName, Reason: reason, Message: message, Diagnostics: []ResolutionDiagnostic{{Severity: DiagnosticSeverityError, Code: string(reason), Message: message}}}
+}
+
+func (v *SSHAllowedSignersVerifier) tagIsUnsigned(repoRoot, tagName string) bool {
+	if !tagRefHasTagObject(v.gitExecutable, repoRoot, tagName) {
+		return true
+	}
+	tagBody, ok := gitTagObjectBody(v.gitExecutable, repoRoot, tagName)
+	if !ok {
+		return false
+	}
+	return !strings.Contains(tagBody, "-----BEGIN SSH SIGNATURE-----") && !strings.Contains(tagBody, "-----BEGIN PGP SIGNATURE-----")
+}
+
+func tagRefHasTagObject(executable, repoRoot, tagName string) bool {
+	result := runGitCaptured([]string{"-C", repoRoot, "cat-file", "-t", "refs/tags/" + tagName}, executable)
+	if result.TimedOut || result.ExitCode != 0 || result.Err != nil {
+		return false
+	}
+	return strings.TrimSpace(result.Output) == "tag"
+}
+
+func gitTagObjectBody(executable, repoRoot, tagName string) (string, bool) {
+	result := runGitCaptured([]string{"-C", repoRoot, "cat-file", "-p", "refs/tags/" + tagName}, executable)
+	if result.TimedOut || result.ExitCode != 0 || result.Err != nil {
+		return "", false
+	}
+	return result.Output, true
 }
 
 func writeAllowedSignersFile(allowedSigners []byte) (string, func(), error) {

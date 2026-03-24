@@ -116,14 +116,25 @@ func buildResolvedProjectIndex(v *Validator, contentRoot, rootConfigPath string,
 
 func validateResolvedStatusFiles(v *Validator, index *ProjectIndex, rootConfigPath string, rootData []byte) error {
 	for path, record := range index.StatusFiles {
-		if err := v.ValidateExtensionOptIn(rootConfigPath, rootData, path, record.Raw); err != nil {
+		hasExtensions, err := v.ValidateExtensionUsage(rootConfigPath, rootData, path, record.Raw)
+		if err != nil {
 			return err
+		}
+		if hasExtensions {
+			appendProjectWarning(index, ValidationDiagnostic{Severity: DiagnosticSeverityWarning, Code: "extensions_present", Message: "extensions are non-authoritative metadata and must not alter RuneContext semantics", Path: path})
 		}
 		if err := validateResolvedStatusFileReferences(path, record, index); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func appendProjectWarning(index *ProjectIndex, warning ValidationDiagnostic) {
+	if index == nil {
+		return
+	}
+	index.Warnings = append(index.Warnings, warning)
 }
 
 func validateResolvedStatusFileReferences(path string, record StatusFileRecord, index *ProjectIndex) error {

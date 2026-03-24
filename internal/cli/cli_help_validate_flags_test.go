@@ -135,6 +135,7 @@ func TestRunSubcommandHelpTokens(t *testing.T) {
 		{name: "standard", args: []string{"standard", "--help"}},
 		{name: "init", args: []string{"init", "--help"}},
 		{name: "promote", args: []string{"promote", "--help"}},
+		{name: "assurance", args: []string{"assurance", "--help"}},
 	}
 
 	for _, tc := range tests {
@@ -165,6 +166,7 @@ func TestRunSubcommandHelpRejectsExtraArgs(t *testing.T) {
 		{name: "standard", args: []string{"standard", "--help", "extra"}},
 		{name: "init", args: []string{"init", "--help", "extra"}},
 		{name: "promote", args: []string{"promote", "--help", "extra"}},
+		{name: "assurance", args: []string{"assurance", "--help", "extra"}},
 	}
 
 	for _, tc := range tests {

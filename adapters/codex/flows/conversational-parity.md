@@ -29,7 +29,7 @@ CLI inputs. No adapter-only lifecycle or mutation semantics are allowed.
 
 ## Host Capabilities
 
-- Hosts must declare the interaction surface they expose for this adapter by listing the capabilities documented under "Recommended Branch Cut 4: Remaining tool-specific adapters, compatibility mode, and parity hardening" in `docs/implementation-plan/milestone-breakdown.md`. Explicit capability declarations keep adapter behavior aligned with each host's constraints.
+- Hosts must declare the interaction surface they expose for this adapter by listing the capabilities documented under "Recommended Branch Cut 4: Remaining tool-specific adapters, compatibility mode, and parity hardening" in `docs/implementation-plan/adapter-host-capabilities.md`. Explicit capability declarations keep adapter behavior aligned with each host's constraints.
 - Prompts: a prompt-less host receives the same command proposals as a shell user would; the adapter falls back to static guidance plus the matching `runectx` CLI commands for each step.
 - Shell access: when the host cannot run shell helpers, the adapter never executes `runectx` commands directly and instead guides reviewers to invoke the explicit CLI calls it would otherwise run.
 - Hooks: hosts without hook support defer validation to the next explicit `runectx validate` call, and the adapter surfaces the same diagnostics it would produce with a hook-enabled host.

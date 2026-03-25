@@ -186,6 +186,28 @@ func TestRunAdapterSyncRejectsSymlinkedManagedTarget(t *testing.T) {
 	}
 }
 
+func TestRunAdapterSyncRejectsSymlinkedAncestor(t *testing.T) {
+	projectRoot := t.TempDir()
+	outside := t.TempDir()
+	symlinkRoot := filepath.Join(projectRoot, ".runecontext")
+	if err := os.Symlink(outside, symlinkRoot); err != nil {
+		if os.IsPermission(err) {
+			t.Skipf("symlink creation not permitted: %v", err)
+		}
+		t.Fatalf("create dot runecontext symlink: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"adapter", "sync", "--path", projectRoot, "opencode"}, &stdout, &stderr)
+	if code != exitInvalid {
+		t.Fatalf("expected invalid exit code, got %d (%s)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "adapter sync rejects symlinked path") {
+		t.Fatalf("expected ancestor symlink rejection, got %q", stderr.String())
+	}
+}
+
 func TestRunAdapterSyncRejectsSymlinkedSourceFile(t *testing.T) {
 	t.Skip("helper test no longer needed")
 }

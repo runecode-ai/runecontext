@@ -17,7 +17,7 @@ var adapterToolPattern = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
 
 func parseAdapterSyncArgs(args []string) (adapterRequest, error) {
 	request := adapterRequest{root: "."}
-	positionals := make([]string, 0, 2)
+	positionals := make([]string, 0, 1)
 	err := consumeArgs(args, func(flag parsedFlag) (int, error) {
 		if flag.name != "--path" {
 			return flag.next, fmt.Errorf("unknown adapter sync flag %q", flag.raw)
@@ -30,18 +30,11 @@ func parseAdapterSyncArgs(args []string) (adapterRequest, error) {
 	if err != nil {
 		return adapterRequest{}, err
 	}
-	if len(positionals) == 0 || len(positionals) > 2 {
-		return adapterRequest{}, fmt.Errorf("adapter sync requires <tool> and optional [path]")
+	if len(positionals) != 1 {
+		return adapterRequest{}, fmt.Errorf("adapter sync requires <tool>")
 	}
 	if err := assignAdapterTool(&request, positionals[0]); err != nil {
 		return adapterRequest{}, err
-	}
-	if len(positionals) == 2 {
-		if request.explicitRoot {
-			return adapterRequest{}, fmt.Errorf("cannot use both --path and a positional path argument")
-		}
-		request.root = positionals[1]
-		request.explicitRoot = true
 	}
 	return request, nil
 }

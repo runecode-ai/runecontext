@@ -7,6 +7,7 @@ func completionCommandMetadata() CommandMetadata {
 		Usage: completionUsage,
 		Subcommands: []CommandMetadata{
 			completionSuggestCommandMetadata(),
+			completionMetadataCommandMetadata(),
 		},
 		Positionals: []PositionalMetadata{
 			{Name: "shell", Value: enumValueSpec("bash", "zsh", "fish")},
@@ -26,5 +27,13 @@ func completionSuggestCommandMetadata() CommandMetadata {
 		Positionals: []PositionalMetadata{
 			{Name: "provider", Value: enumValueSpec(suggestionProviderChangeIDs, suggestionProviderBundleIDs, suggestionProviderPromotionTargets, suggestionProviderAdapterNames)},
 		},
+	}
+}
+
+func completionMetadataCommandMetadata() CommandMetadata {
+	return CommandMetadata{
+		Name:  "metadata",
+		Path:  "completion metadata",
+		Usage: completionMetadataUsage,
 	}
 }

@@ -245,6 +245,104 @@ func TestRunStandardDiscoverNoActiveStandardsOutputsReusableEmptyCandidates(t *t
 	}
 }
 
+func TestRunStandardDiscoverScopeAndFocusFilterCandidates(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"standard", "discover", "--path", projectRoot, "--scope-path", "standards/security", "--focus", "review"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if got, want := fields["discovery_scope_count"], "1"; got != want {
+		t.Fatalf("expected discovery_scope_count %q, got %q", want, got)
+	}
+	if got, want := fields["discovery_scope_1"], "standards/security"; got != want {
+		t.Fatalf("expected discovery_scope_1 %q, got %q", want, got)
+	}
+	if got, want := fields["discovery_focus"], "review"; got != want {
+		t.Fatalf("expected discovery_focus %q, got %q", want, got)
+	}
+	if got, want := fields["candidate_standard_count"], "1"; got != want {
+		t.Fatalf("expected candidate_standard_count %q, got %q", want, got)
+	}
+	if got, want := fields["candidate_standard_1"], "standards/security/review.md"; got != want {
+		t.Fatalf("expected candidate_standard_1 %q, got %q", want, got)
+	}
+}
+
+func TestRunStandardDiscoverNormalizesDuplicateScopePaths(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"standard", "discover", "--path", projectRoot, "--scope-path", "security", "--scope-path", "runecontext/standards/security/"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if got, want := fields["discovery_scope_count"], "1"; got != want {
+		t.Fatalf("expected deduped discovery_scope_count %q, got %q", want, got)
+	}
+	if got, want := fields["discovery_scope_1"], "standards/security"; got != want {
+		t.Fatalf("expected normalized discovery_scope_1 %q, got %q", want, got)
+	}
+}
+
+func TestRunStandardDiscoverRejectsScopePathTraversal(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	for _, scope := range []string{"../security", "standards/../security"} {
+		t.Run(scope, func(t *testing.T) {
+			var stdout bytes.Buffer
+			var stderr bytes.Buffer
+			code := Run([]string{"standard", "discover", "--path", projectRoot, "--scope-path", scope}, &stdout, &stderr)
+			if code != exitUsage {
+				t.Fatalf("expected usage exit code, got %d (%s)", code, stderr.String())
+			}
+			if !strings.Contains(stderr.String(), "invalid --scope-path") {
+				t.Fatalf("expected invalid scope-path usage error, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestRunStandardDiscoverNormalizesShorthandScopePaths(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"standard", "discover", "--path", projectRoot, "--scope-path", "security", "--scope-path", "standards/global", "--scope-path", "runecontext/standards/security/"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if got, want := fields["discovery_scope_count"], "2"; got != want {
+		t.Fatalf("expected normalized discovery_scope_count %q, got %q", want, got)
+	}
+	scopes := []string{fields["discovery_scope_1"], fields["discovery_scope_2"]}
+	if !(scopes[0] == "standards/global" || scopes[1] == "standards/global") {
+		t.Fatalf("expected normalized scopes to include standards/global, got %#v", scopes)
+	}
+	if !(scopes[0] == "standards/security" || scopes[1] == "standards/security") {
+		t.Fatalf("expected normalized scopes to include standards/security, got %#v", scopes)
+	}
+}
+
+func TestRunStandardDiscoverExplainIncludesScopeAndFocus(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"standard", "discover", "--explain", "--path", projectRoot, "--scope-path", "standards/global", "--focus", "base"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	fields := parseCLIKeyValueOutput(t, stdout.String())
+	if got, want := fields["explain_discovery_scope_count"], "1"; got != want {
+		t.Fatalf("expected explain_discovery_scope_count %q, got %q", want, got)
+	}
+	if got, want := fields["explain_discovery_focus"], "base"; got != want {
+		t.Fatalf("expected explain_discovery_focus %q, got %q", want, got)
+	}
+}
+
 func setStandardStatusForTest(t *testing.T, path, status string) {
 	t.Helper()
 	data, err := os.ReadFile(path)

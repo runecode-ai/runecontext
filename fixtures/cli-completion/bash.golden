@@ -15,6 +15,7 @@ _runectx_has_command() {
     'change reallocate') return 0 ;;
     'change shape') return 0 ;;
     'completion') return 0 ;;
+    'completion metadata') return 0 ;;
     'completion suggest') return 0 ;;
     'doctor') return 0 ;;
     'generate') return 0 ;;
@@ -46,7 +47,8 @@ _runectx_subcommands_for() {
     'change new') echo '' ;;
     'change reallocate') echo '' ;;
     'change shape') echo '' ;;
-    'completion') echo 'suggest' ;;
+    'completion') echo 'metadata suggest' ;;
+    'completion metadata') echo '' ;;
     'completion suggest') echo '' ;;
     'doctor') echo '' ;;
     'generate') echo 'indexes' ;;
@@ -84,7 +86,7 @@ _runectx_flags_for() {
     'init') echo '--dry-run --explain --json --mode --non-interactive --path --seed-bundle' ;;
     'promote') echo '--accept --complete --dry-run --explain --json --non-interactive --path --target' ;;
     'standard') echo '--explain --json --non-interactive' ;;
-    'standard discover') echo '--change --confirm-handoff --explain --json --non-interactive --path --target' ;;
+    'standard discover') echo '--change --confirm-handoff --explain --focus --json --non-interactive --path --scope-path --target' ;;
     'status') echo '--explain --json --non-interactive --path' ;;
     'validate') echo '--explain --json --non-interactive --path --ssh-allowed-signers' ;;
     *) echo '' ;;
@@ -125,7 +127,9 @@ _runectx_flag_takes_value() {
     'promote|--path') return 0 ;;
     'promote|--target') return 0 ;;
     'standard discover|--change') return 0 ;;
+    'standard discover|--focus') return 0 ;;
     'standard discover|--path') return 0 ;;
+    'standard discover|--scope-path') return 0 ;;
     'standard discover|--target') return 0 ;;
     'status|--path') return 0 ;;
     'validate|--path') return 0 ;;
@@ -148,6 +152,8 @@ _runectx_enum_for_flag() {
 _runectx_suggest_provider_for_flag() {
   case "$1" in
     'change close|--superseded-by') echo 'change-ids' ;;
+    'change new|--bundle') echo 'bundle-ids' ;;
+    'init|--seed-bundle') echo 'bundle-ids' ;;
     'promote|--target') echo 'promotion-targets' ;;
     'standard discover|--change') echo 'change-ids' ;;
     'standard discover|--target') echo 'promotion-targets' ;;
@@ -173,6 +179,7 @@ _runectx_suggest_provider_for_positional() {
     'change close|1') echo 'change-ids' ;;
     'change reallocate|1') echo 'change-ids' ;;
     'change shape|1') echo 'change-ids' ;;
+    'promote|1') echo 'change-ids' ;;
     *) echo '' ;;
   esac
 }

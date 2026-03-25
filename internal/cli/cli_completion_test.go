@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -40,6 +41,49 @@ func TestRunCompletionHelp(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "usage="+completionUsage) {
 		t.Fatalf("expected completion help usage, got %q", stdout.String())
+	}
+}
+
+func TestRunCompletionMetadataJSON(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	if code := Run([]string{"completion", "metadata"}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	if strings.TrimSpace(stderr.String()) != "" {
+		t.Fatalf("expected empty stderr, got %q", stderr.String())
+	}
+	var payload CompletionMetadata
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("expected valid completion metadata json: %v\n%s", err, stdout.String())
+	}
+	if payload.Binary != "runectx" {
+		t.Fatalf("expected binary runectx, got %q", payload.Binary)
+	}
+	if len(payload.Commands) == 0 || len(payload.Flags) == 0 {
+		t.Fatalf("expected non-empty metadata payload, got %#v", payload)
+	}
+}
+
+func TestRunCompletionMetadataUsageAndHelp(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
+	if code := Run([]string{"completion", "metadata", "extra"}, &stdout, &stderr); code != exitUsage {
+		t.Fatalf("expected usage exit code, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "usage="+completionMetadataUsage) {
+		t.Fatalf("expected completion metadata usage output, got %q", stderr.String())
+	}
+
+	stdout.Reset()
+	stderr.Reset()
+	if code := Run([]string{"completion", "metadata", "--help"}, &stdout, &stderr); code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "usage="+completionMetadataUsage) {
+		t.Fatalf("expected completion metadata help usage, got %q", stdout.String())
 	}
 }
 
@@ -169,6 +213,9 @@ func TestCompletionMetadataIncludesPositionalEnums(t *testing.T) {
 	}
 	if !slices.Equal(checks["completion suggest|1"], []string{"adapter-names", "bundle-ids", "change-ids", "promotion-targets"}) {
 		t.Fatalf("expected completion suggest provider enums, got %#v", checks["completion suggest|1"])
+	}
+	if checks["completion metadata|1"] != nil {
+		t.Fatalf("expected completion metadata to have no positional enums, got %#v", checks["completion metadata|1"])
 	}
 	if !slices.Equal(checks["assurance enable|1"], []string{"verified"}) {
 		t.Fatalf("expected assurance enable mode enum, got %#v", checks["assurance enable|1"])

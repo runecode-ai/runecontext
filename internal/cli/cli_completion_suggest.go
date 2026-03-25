@@ -25,17 +25,8 @@ type completionSuggestRequest struct {
 }
 
 func runCompletionSuggest(args []string, stdout, stderr io.Writer) int {
-	if len(args) == 1 && isHelpToken(args[0]) {
-		writeLines(stdout,
-			line{"result", "ok"},
-			line{"command", "completion suggest"},
-			line{"usage", completionSuggestUsage},
-		)
-		return exitOK
-	}
-	if len(args) > 1 && isHelpToken(args[0]) {
-		writeCommandUsageError(stderr, "completion suggest", completionSuggestUsage, fmt.Errorf("help does not accept additional arguments"))
-		return exitUsage
+	if code, handled := handleCompletionSuggestSpecialArgs(args, stdout, stderr); handled {
+		return code
 	}
 	request, err := parseCompletionSuggestArgs(args)
 	if err != nil {
@@ -55,6 +46,35 @@ func runCompletionSuggest(args []string, stdout, stderr io.Writer) int {
 		return exitInvalid
 	}
 	return exitOK
+}
+
+func handleCompletionSuggestSpecialArgs(args []string, stdout, stderr io.Writer) (int, bool) {
+	if len(args) == 1 && isHelpToken(args[0]) {
+		writeLines(stdout,
+			line{"result", "ok"},
+			line{"command", "completion suggest"},
+			line{"usage", completionSuggestUsage},
+		)
+		return exitOK, true
+	}
+	if len(args) > 1 && isHelpToken(args[0]) {
+		writeCommandUsageError(stderr, "completion suggest", completionSuggestUsage, fmt.Errorf("help does not accept additional arguments"))
+		return exitUsage, true
+	}
+	if hasToken(args, "--json") {
+		writeCommandUsageError(stderr, "completion suggest", completionSuggestUsage, fmt.Errorf("--json is not supported for completion suggest"))
+		return exitUsage, true
+	}
+	return exitOK, false
+}
+
+func hasToken(args []string, token string) bool {
+	for _, arg := range args {
+		if arg == token {
+			return true
+		}
+	}
+	return false
 }
 
 func parseCompletionSuggestArgs(args []string) (completionSuggestRequest, error) {

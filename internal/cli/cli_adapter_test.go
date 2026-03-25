@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -309,4 +310,99 @@ func TestRunAdapterSyncUnknownToolFails(t *testing.T) {
 	if !strings.Contains(stderr.String(), "adapter \"missing-tool\" not found") {
 		t.Fatalf("expected unknown adapter output, got %q", stderr.String())
 	}
+}
+
+func TestRunAdapterSyncDeletesStaleManagedFiles(t *testing.T) {
+	projectRoot := t.TempDir()
+	runAdapterSyncAndParse(t, projectRoot, "generic")
+	stalePath := filepath.Join(projectRoot, ".runecontext", "adapters", "generic", "managed", "stale.txt")
+	if err := os.WriteFile(stalePath, []byte("stale\n"), 0o644); err != nil {
+		t.Fatalf("write stale managed file: %v", err)
+	}
+	fields := runAdapterSyncAndParse(t, projectRoot, "generic")
+	if got := fields["changed_file_count"]; got == "0" {
+		t.Fatalf("expected stale-file cleanup mutation, got %#v", fields)
+	}
+	if _, err := os.Stat(stalePath); !os.IsNotExist(err) {
+		t.Fatalf("expected stale managed file removal, got err=%v", err)
+	}
+}
+
+func TestValidateAfterAuthoritativeEditScriptBoundaries(t *testing.T) {
+	if _, err := exec.LookPath("bash"); err != nil {
+		t.Skipf("bash not available: %v", err)
+	}
+	test := prepareValidateHookBoundaryTest(t)
+
+	t.Run("runs validate for authoritative paths", func(t *testing.T) {
+		called, err := runValidateHookScript(test, "runecontext/changes/CHG-2026-001-a3f2-auth-gateway/status.yaml")
+		if err != nil {
+			t.Fatalf("run validate hook: %v", err)
+		}
+		if !strings.Contains(called, "validate --path ") {
+			t.Fatalf("expected validate invocation, got %q", called)
+		}
+	})
+
+	t.Run("skips unrelated paths", func(t *testing.T) {
+		_, err := runValidateHookScript(test, "pkg/app/main.go")
+		if err != nil {
+			t.Fatalf("run validate hook: %v", err)
+		}
+		if _, err := os.Stat(test.calledPath); !os.IsNotExist(err) {
+			t.Fatalf("expected no validate call for unrelated paths, got err=%v", err)
+		}
+	})
+}
+
+type validateHookBoundaryTest struct {
+	scriptPath  string
+	projectRoot string
+	fakeBin     string
+	calledPath  string
+}
+
+func prepareValidateHookBoundaryTest(t *testing.T) validateHookBoundaryTest {
+	t.Helper()
+	repoRoot, err := repoRootForTests()
+	if err != nil {
+		t.Fatal(err)
+	}
+	test := validateHookBoundaryTest{
+		scriptPath:  filepath.Join(repoRoot, "adapters", "opencode", "automation", "validate_after_authoritative_edit.sh"),
+		projectRoot: prepareCLIWorkflowProject(t),
+		fakeBin:     t.TempDir(),
+	}
+	test.calledPath = filepath.Join(test.projectRoot, "validate-called")
+	writeFakeRunectxExecutable(t, filepath.Join(test.fakeBin, "runectx"))
+	return test
+}
+
+func writeFakeRunectxExecutable(t *testing.T, path string) {
+	t.Helper()
+	stub := "#!/usr/bin/env bash\nset -euo pipefail\nprintf '%s\\n' \"$*\" > \"$RUNECTX_ARGS_OUT\"\n"
+	if err := os.WriteFile(path, []byte(stub), 0o755); err != nil {
+		t.Fatalf("write fake runectx: %v", err)
+	}
+}
+
+func runValidateHookScript(test validateHookBoundaryTest, changedPath string) (string, error) {
+	_ = os.Remove(test.calledPath)
+	cmd := exec.Command("bash", test.scriptPath, changedPath)
+	cmd.Dir = test.projectRoot
+	cmd.Env = append(os.Environ(),
+		"PATH="+test.fakeBin+":"+os.Getenv("PATH"),
+		"RUNECTX_ARGS_OUT="+test.calledPath,
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return "", fmt.Errorf("script failed: %w\n%s", err, string(out))
+	}
+	called, err := os.ReadFile(test.calledPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	return string(called), nil
 }

@@ -59,6 +59,7 @@ complete -c runectx -f -n '__fish_seen_subcommand_from change' -a 'close'
 complete -c runectx -f -n '__fish_seen_subcommand_from change' -a 'new'
 complete -c runectx -f -n '__fish_seen_subcommand_from change' -a 'reallocate'
 complete -c runectx -f -n '__fish_seen_subcommand_from change' -a 'shape'
+complete -c runectx -f -n '__fish_seen_subcommand_from completion' -a 'metadata'
 complete -c runectx -f -n '__fish_seen_subcommand_from completion' -a 'suggest'
 complete -c runectx -f -n '__fish_seen_subcommand_from generate' -a 'indexes'
 complete -c runectx -f -n '__fish_seen_subcommand_from standard' -a 'discover'
@@ -112,6 +113,7 @@ complete -c runectx -f -n '(__fish_seen_subcommand_from change close); and __run
 complete -c runectx -n '__fish_seen_subcommand_from change close' -l verification-status -r
 complete -c runectx -f -n '(__fish_seen_subcommand_from change close); and __runectx_prev_token_is --verification-status' -a 'failed passed pending skipped'
 complete -c runectx -n '__fish_seen_subcommand_from change new' -l bundle -r
+complete -c runectx -f -n '(__fish_seen_subcommand_from change new); and __runectx_prev_token_is --bundle' -a '(__runectx_dynamic_suggest bundle-ids)'
 complete -c runectx -n '__fish_seen_subcommand_from change new' -l description -r
 complete -c runectx -n '__fish_seen_subcommand_from change new' -l dry-run
 complete -c runectx -n '__fish_seen_subcommand_from change new' -l explain
@@ -160,6 +162,7 @@ complete -c runectx -f -n '(__fish_seen_subcommand_from init); and __runectx_pre
 complete -c runectx -n '__fish_seen_subcommand_from init' -l non-interactive
 complete -c runectx -n '__fish_seen_subcommand_from init' -l path -r
 complete -c runectx -n '__fish_seen_subcommand_from init' -l seed-bundle -r
+complete -c runectx -f -n '(__fish_seen_subcommand_from init); and __runectx_prev_token_is --seed-bundle' -a '(__runectx_dynamic_suggest bundle-ids)'
 complete -c runectx -n '__fish_seen_subcommand_from promote' -l accept
 complete -c runectx -n '__fish_seen_subcommand_from promote' -l complete
 complete -c runectx -n '__fish_seen_subcommand_from promote' -l dry-run
@@ -176,9 +179,11 @@ complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l change
 complete -c runectx -f -n '(__fish_seen_subcommand_from standard discover); and __runectx_prev_token_is --change' -a '(__runectx_dynamic_suggest change-ids)'
 complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l confirm-handoff
 complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l explain
+complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l focus -r
 complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l json
 complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l non-interactive
 complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l path -r
+complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l scope-path -r
 complete -c runectx -n '__fish_seen_subcommand_from standard discover' -l target -r
 complete -c runectx -f -n '(__fish_seen_subcommand_from standard discover); and __runectx_prev_token_is --target' -a '(__runectx_dynamic_suggest promotion-targets)'
 complete -c runectx -n '__fish_seen_subcommand_from status' -l explain
@@ -202,6 +207,8 @@ function __runectx_flag_name_takes_value
     return 0
   case --design
     return 0
+  case --focus
+    return 0
   case --mode
     return 0
   case --path
@@ -209,6 +216,8 @@ function __runectx_flag_name_takes_value
   case --prefix
     return 0
   case --reference
+    return 0
+  case --scope-path
     return 0
   case --seed-bundle
     return 0
@@ -304,5 +313,6 @@ complete -c runectx -f -n '__fish_seen_subcommand_from adapter sync' -a '(__rune
 complete -c runectx -f -n '__fish_seen_subcommand_from change close' -a '(__runectx_dynamic_suggest change-ids)'
 complete -c runectx -f -n '__fish_seen_subcommand_from change reallocate' -a '(__runectx_dynamic_suggest change-ids)'
 complete -c runectx -f -n '__fish_seen_subcommand_from change shape' -a '(__runectx_dynamic_suggest change-ids)'
+complete -c runectx -f -n '__fish_seen_subcommand_from promote' -a '(__runectx_dynamic_suggest change-ids)'
 complete -c runectx -f -n '__fish_seen_subcommand_from assurance capture; and __runectx_positional_index_at_least 2 assurance capture' -a '(__runectx_dynamic_suggest bundle-ids)'
 complete -c runectx -f -n '__fish_seen_subcommand_from bundle resolve; and __runectx_positional_index_at_least 1 bundle resolve' -a '(__runectx_dynamic_suggest bundle-ids)'

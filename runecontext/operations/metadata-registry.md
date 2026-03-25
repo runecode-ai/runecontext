@@ -20,7 +20,7 @@ The typed model includes:
 From this one registry, RuneContext derives:
 
 - Human-readable operation docs in `runecontext/operations/`
-- Machine-readable completion metadata (`CLICompletionMetadata`)
+- Machine-readable completion metadata (`runectx completion metadata`)
 - Static shell completion scripts (`runectx completion <shell>`)
 - Shared dynamic suggestion surfaces (`runectx completion suggest ...`)
 

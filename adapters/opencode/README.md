@@ -9,6 +9,16 @@ This adapter is the first end-to-end tool adapter for alpha.7.
 - Keep tool-managed files under a namespaced managed subtree when synced with
   `runectx adapter sync opencode`.
 
+## Capability Declaration
+
+- Prompts: supported
+- Shell access: supported
+- Hooks: supported
+- Dynamic suggestions: supported via shared completion metadata/providers
+- Structured output: supported
+
+See `capabilities.yaml` for machine-readable declarations.
+
 ## Conversational Flows
 
 The OpenCode adapter provides conversational wrappers for:
@@ -19,6 +29,13 @@ The OpenCode adapter provides conversational wrappers for:
 - `promote`
 
 See `flows/conversational-parity.md` for CLI-parity mapping.
+
+Detailed flow playbooks:
+
+- `flows/change-new.md`
+- `flows/change-shape.md`
+- `flows/standard-discover.md`
+- `flows/promote.md`
 
 ## Validation Hook
 

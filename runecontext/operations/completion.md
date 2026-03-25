@@ -8,6 +8,7 @@ RuneContext completion is generated from the canonical typed command registry.
 - `runectx completion zsh`
 - `runectx completion fish`
 - `runectx completion suggest <provider>`
+- `runectx completion metadata`
 
 Providers:
 
@@ -25,6 +26,7 @@ Providers:
   `completion <bash|zsh|fish>`)
 - Dynamic repo-aware suggestions for selected text arguments (for example
   change IDs, bundle IDs, promotion targets)
+- Stable machine-readable completion metadata export for adapter/tool consumers
 
 ## Repo-Aware Suggestion Behavior
 

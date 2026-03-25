@@ -220,27 +220,25 @@ func TestRunCompletionSuggestReadOnly(t *testing.T) {
 func TestCompletionMetadataIncludesSuggestionProviders(t *testing.T) {
 	metadata := CompletionMetadataRegistry()
 
-	flagProviders := map[string]string{}
-	for _, flag := range metadata.Flags {
-		if flag.SuggestionProvider == "" {
-			continue
-		}
-		flagProviders[flag.CommandPath+"|"+flag.Name] = flag.SuggestionProvider
-	}
-
+	flagProviders := collectFlagSuggestionProviders(metadata)
 	if got := flagProviders["change close|--superseded-by"]; got != suggestionProviderChangeIDs {
 		t.Fatalf("expected change close superseded-by suggestion provider, got %q", got)
 	}
 	if got := flagProviders["promote|--target"]; got != suggestionProviderPromotionTargets {
 		t.Fatalf("expected promote target suggestion provider, got %q", got)
 	}
+	if got := flagProviders["change new|--bundle"]; got != suggestionProviderBundleIDs {
+		t.Fatalf("expected change new bundle suggestion provider, got %q", got)
+	}
+	if got := flagProviders["init|--seed-bundle"]; got != suggestionProviderBundleIDs {
+		t.Fatalf("expected init seed-bundle suggestion provider, got %q", got)
+	}
 	if got := flagProviders["standard discover|--change"]; got != suggestionProviderChangeIDs {
 		t.Fatalf("expected standard discover change suggestion provider, got %q", got)
 	}
-
-	positionalProviders := map[string]string{}
-	for _, positional := range metadata.PositionalSuggestions {
-		positionalProviders[fmt.Sprintf("%s|%d", positional.CommandPath, positional.Position)] = positional.SuggestionProvider
+	positionalProviders := collectPositionalSuggestionProviders(metadata)
+	if got := positionalProviders["promote|1"]; got != suggestionProviderChangeIDs {
+		t.Fatalf("expected promote positional suggestion provider, got %q", got)
 	}
 	if got := positionalProviders["change shape|1"]; got != suggestionProviderChangeIDs {
 		t.Fatalf("expected change shape positional suggestion provider, got %q", got)
@@ -248,6 +246,25 @@ func TestCompletionMetadataIncludesSuggestionProviders(t *testing.T) {
 	if got := positionalProviders["bundle resolve|1"]; got != suggestionProviderBundleIDs {
 		t.Fatalf("expected bundle resolve positional suggestion provider, got %q", got)
 	}
+}
+
+func collectFlagSuggestionProviders(metadata CompletionMetadata) map[string]string {
+	providers := map[string]string{}
+	for _, flag := range metadata.Flags {
+		if flag.SuggestionProvider == "" {
+			continue
+		}
+		providers[flag.CommandPath+"|"+flag.Name] = flag.SuggestionProvider
+	}
+	return providers
+}
+
+func collectPositionalSuggestionProviders(metadata CompletionMetadata) map[string]string {
+	providers := map[string]string{}
+	for _, positional := range metadata.PositionalSuggestions {
+		providers[fmt.Sprintf("%s|%d", positional.CommandPath, positional.Position)] = positional.SuggestionProvider
+	}
+	return providers
 }
 
 func completionSuggestLines(output string) []string {

@@ -1271,6 +1271,17 @@ tools while preserving one core model.
   against installed or pinned release contents; alpha.8 later hardens release
   packaging and broader sync/update behavior without changing that local-first
   boundary.
+- Shell completion remains shell-specific. Adapter sync should not compile Bash,
+  Zsh, or Fish completion output into OpenCode, Claude Code, or Codex adapter
+  artifacts.
+- Repo-local host-native adapter artifacts should stay additive,
+  namespaced/identifiable, and uninstall-friendly. Prefer `runecontext:`
+  naming when the host surface allows it; otherwise fall back to
+  `runecontext-`. Adapter sync must never overwrite or remove unrelated
+  user-owned commands, skills, or host config.
+- Alpha.7 host-native adapter generation should target the recommended surface
+  for each tool: OpenCode syncs skills plus commands, Claude Code syncs skills
+  plus an optional command shim, and Codex syncs skills only.
 
 Implementation note: to keep reviews manageable and avoid baking more command
 metadata duplication into adapters, alpha.7 work is grouped into the following
@@ -1383,6 +1394,45 @@ recommended branch cuts.
   RuneContext files automatically invoke `runectx validate` while unrelated code
   edits do not trigger unnecessary validation.
 
+### Recommended Branch Cut 5: Repo-local host-native adapter artifacts
+
+- [ ] Issue: define the repo-local host-native artifact layouts that adapter sync
+  may materialize for supported tools without reviving `runecontext/commands/`
+  as a RuneContext source-of-truth surface.
+- [ ] Issue: sync OpenCode-native skills and commands into the target
+  repository's supported repo-local locations (`.opencode/skills/` and
+  `.opencode/commands/`) as additive adapter outputs.
+- [ ] Issue: sync Claude Code-native skills into `.claude/skills/` and, where
+  useful for discoverability, add an optional command shim under
+  `.claude/commands/` without making commands the canonical adapter surface.
+- [ ] Issue: sync Codex-native skills into `.agents/skills/` and keep Codex
+  host-native integration skills-only unless Codex later adds a documented
+  repo-local command surface.
+- [ ] Issue: ensure generated host-native artifacts use RuneContext-owned,
+  uninstall-friendly names: prefer `runecontext:*` when the host format allows
+  it, otherwise use `runecontext-`.
+- [ ] Issue: ensure every generated host-native artifact is identifiable as
+  RuneContext-managed via stable naming, file placement, and ownership markers
+  so a future `runectx uninstall` flow can remove only RuneContext-installed
+  artifacts.
+- [ ] Issue: ensure adapter sync never removes, rewrites, or silently merges
+  into unrelated existing user-owned commands, skills, or host config; any path
+  or name conflict with a non-RuneContext artifact must fail closed with
+  explicit diagnostics.
+- [ ] Issue: keep host-native command/skill artifacts as thin wrappers over the
+  same explicit `runectx` operations and candidate data already documented for
+  each adapter flow.
+- [ ] Issue: document which synced files are host-native discoverability shims
+  versus canonical adapter flow assets so future uninstall/update logic can
+  treat them predictably.
+- [ ] Issue: define upgrade ownership for host-native adapter artifacts so
+  `runectx upgrade` can refresh RuneContext-managed commands/skills when the
+  underlying CLI contract or adapter flow templates change, without touching
+  unrelated user-owned host artifacts.
+- [ ] Issue: add smoke tests for host-native artifact sync, conflict detection,
+  ownership-marker preservation, and no-clobber behavior when repositories
+  already contain custom tool commands or skills.
+
 ### Exit Criteria
 
 - At least one tool-specific adapter is usable end to end.
@@ -1403,6 +1453,12 @@ recommended branch cuts.
   adapter-pack contents without requiring network access.
 - Adapter sync preserves explicit boundaries between tool-managed files and
   user-owned config.
+- Repo-local host-native adapter artifacts, where supported, are additive,
+  tool-appropriate, and identifiable enough for future uninstall/removal
+  without touching unrelated user-owned host artifacts.
+- Repo-local host-native adapter artifacts are also upgradeable: explicit
+  `runectx upgrade` rerenders and refreshes RuneContext-managed command/skill
+  outputs when adapter or CLI contract changes require it.
 - Adapter behavior is covered by parity and smoke tests rather than manual
   walkthroughs only.
 
@@ -1463,6 +1519,11 @@ install/upgrade paths and end-to-end reference fixtures.
   repo-local files, git upgrades update only the pinned source reference fields
   in `runecontext.yaml`, and `type: path` sources are externally managed and
   must never be mutated by `runectx`.
+- Upgrade planning should treat RuneContext-managed host-native adapter
+  artifacts as derived project assets: when the installed release changes their
+  expected contents, preview should surface those updates and apply should
+  refresh only the RuneContext-owned command/skill files while leaving
+  unrelated user-owned host artifacts untouched.
 - Embedded upgrade conflict handling should fail closed: if user-modified
   managed files are detected, preview emits a reviewable conflict set and
   `runectx upgrade apply` refuses to proceed rather than auto-merging or
@@ -1508,6 +1569,12 @@ the following recommended branch cuts.
 - [ ] Issue: harden repeated adapter sync behavior to be namespaced and
   merge-aware, with normal adapter sync remaining local-only against installed
   release content.
+- [ ] Issue: ensure preview/apply upgrade logic detects stale
+  RuneContext-managed host-native adapter artifacts and includes their refresh
+  plan when the target release changes generated command/skill outputs.
+- [ ] Issue: ensure upgrade apply refreshes only RuneContext-owned host-native
+  adapter artifacts, preserves unrelated user-owned host commands/skills, and
+  fails closed on ownership-marker conflicts.
 - [ ] Issue: ensure `validate` and `doctor` report unsupported version
   combinations, stale mixed-version trees after merge/rebase, integrity posture
   issues, and upgrade-readiness diagnostics.
@@ -1587,6 +1654,9 @@ the following recommended branch cuts.
   network access is confined to explicit `runectx upgrade` operations.
 - Mixed-version trees fail closed and are repairable through explicit reruns of
   `runectx upgrade` rather than hidden background migration.
+- Explicit upgrade runs refresh RuneContext-managed host-native adapter
+  artifacts when release changes require new command/skill outputs, without
+  clobbering unrelated user-owned host artifacts.
 - Embedded upgrade conflicts fail closed with reviewable conflict reporting
   rather than auto-merge behavior.
 - Windows MVP support is validated through portability and repo-bundle install

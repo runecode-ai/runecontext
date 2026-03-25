@@ -415,6 +415,14 @@ and coverage stay in one place.
 - Keep alpha.7 adapter sync focused on local materialization from installed or
   pinned release contents; alpha.8 hardens release packaging and broader sync/
   update behavior without changing the local-first sync model.
+- Keep alpha.7 host-native adapter artifacts additive and removable: synced
+  OpenCode/Claude/Codex commands or skills must use RuneContext-owned names,
+  avoid clobbering existing user artifacts, and remain identifiable for a
+  future uninstall flow.
+- Keep RuneContext-managed host-native adapter artifacts upgradeable: explicit
+  `runectx upgrade` flows should refresh only the RuneContext-owned generated
+  commands/skills when release changes require new adapter outputs, while
+  leaving unrelated user-owned host artifacts untouched.
 - Keep `runectx` network access limited to an explicit, narrow `upgrade` flow;
   routine project initialization, adapter sync, validation, and other project
   file operations should use already-installed local release contents.

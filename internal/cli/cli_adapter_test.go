@@ -130,46 +130,47 @@ func TestRunAdapterSyncPreservesExecutableBitFromAdapterSource(t *testing.T) {
 	}
 	adaptersRoot := filepath.Join(root, "adapters")
 	t.Chdir(root)
+	assertAdapterSyncPreservesExecutableBitFromSource(t, adaptersRoot)
+}
 
-	t.Run("opencode adapter script stays executable when source is executable", func(t *testing.T) {
-		sourcePath := filepath.Join(adaptersRoot, "opencode", "automation", "validate_after_authoritative_edit.sh")
-		originalMode := statMode(t, sourcePath)
-		t.Cleanup(func() {
-			if err := os.Chmod(sourcePath, originalMode); err != nil {
-				t.Fatalf("restore source mode: %v", err)
-			}
-		})
-		if err := os.Chmod(sourcePath, 0o755); err != nil {
-			t.Fatalf("chmod source executable: %v", err)
-		}
-		sourceData, err := os.ReadFile(sourcePath)
-		if err != nil {
-			t.Fatalf("read source file: %v", err)
-		}
+func assertAdapterSyncPreservesExecutableBitFromSource(t *testing.T, adaptersRoot string) {
+	t.Helper()
 
-		projectRoot := t.TempDir()
-		var stdout bytes.Buffer
-		var stderr bytes.Buffer
-		code := Run([]string{"adapter", "sync", "--path", projectRoot, "opencode"}, &stdout, &stderr)
-		if code != exitOK {
-			t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
-		}
-
-		syncedPath := filepath.Join(projectRoot, ".runecontext", "adapters", "opencode", "managed", "automation", "validate_after_authoritative_edit.sh")
-		syncedMode := statMode(t, syncedPath)
-		syncedData, err := os.ReadFile(syncedPath)
-		if err != nil {
-			t.Fatalf("read synced file: %v", err)
-		}
-		if !bytes.Equal(sourceData, syncedData) {
-			t.Fatalf("expected synced file content to match source")
-		}
-		if runtime.GOOS != "windows" {
-			if syncedMode.Perm() != 0o755 {
-				t.Fatalf("expected synced executable permissions 0755, got %s", fmt.Sprintf("%#o", syncedMode.Perm()))
-			}
+	sourcePath := filepath.Join(adaptersRoot, "opencode", "automation", "validate_after_authoritative_edit.sh")
+	originalMode := statMode(t, sourcePath)
+	t.Cleanup(func() {
+		if err := os.Chmod(sourcePath, originalMode); err != nil {
+			t.Fatalf("restore source mode: %v", err)
 		}
 	})
+	if err := os.Chmod(sourcePath, 0o755); err != nil {
+		t.Fatalf("chmod source executable: %v", err)
+	}
+	sourceData, err := os.ReadFile(sourcePath)
+	if err != nil {
+		t.Fatalf("read source file: %v", err)
+	}
+
+	projectRoot := t.TempDir()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"adapter", "sync", "--path", projectRoot, "opencode"}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+
+	syncedPath := filepath.Join(projectRoot, ".runecontext", "adapters", "opencode", "managed", "automation", "validate_after_authoritative_edit.sh")
+	syncedMode := statMode(t, syncedPath)
+	syncedData, err := os.ReadFile(syncedPath)
+	if err != nil {
+		t.Fatalf("read synced file: %v", err)
+	}
+	if !bytes.Equal(sourceData, syncedData) {
+		t.Fatalf("expected synced file content to match source")
+	}
+	if runtime.GOOS != "windows" && syncedMode.Perm() != 0o755 {
+		t.Fatalf("expected synced executable permissions 0755, got %s", fmt.Sprintf("%#o", syncedMode.Perm()))
+	}
 }
 
 func TestRunAdapterSyncRejectsSymlinkedManagedTarget(t *testing.T) {

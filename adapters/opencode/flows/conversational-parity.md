@@ -27,7 +27,7 @@ CLI inputs. No adapter-only lifecycle or mutation semantics are allowed.
 - Conversations should end with reviewable command proposals or emitted output.
 - Durable mutations remain `runectx` writes so standard diffs are visible in git.
 
--## Host Capabilities
+## Host Capabilities
 
 - Hosts must declare the interaction surface they expose for this adapter using the capability guidance gathered under "Recommended Branch Cut 4: Remaining tool-specific adapters, compatibility mode, and parity hardening" in `docs/implementation-plan/milestone-breakdown.md`. Keeping those declarations explicit ensures adapters remain compatible with every supported host.
 - Prompts: if the host does not support prompts, the adapter falls back to presenting CLI commands and asking for reviews, mirroring the same command-proposal cadence a shell user would follow.

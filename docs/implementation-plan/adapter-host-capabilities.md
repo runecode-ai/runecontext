@@ -8,8 +8,7 @@ Adapters must describe the interaction surfaces their host tools can expose befo
 attempting to exercise those capabilities. At minimum, each host should make an
 explicit declaration covering the following capability classes:
 
-d 
-1. `prompts`: whether the host can surface and capture guided prompts.
+	1. `prompts`: whether the host can surface and capture guided prompts.
 2. `shell_access`: whether the host can launch shell helpers or run CLI commands
    on the user's behalf.
 3. `hooks`: whether the host can register and run scripts such as validation or

@@ -1244,7 +1244,7 @@ tools while preserving one core model.
   and `structured_output` capabilities along with the downgrade behavior they
   must document when any capability is absent.
 - Compatibility-mode guidance should spell out how adapters declare their host
-  capabilities (for example: `prompts`, `shell_access`, `hooks`, `dynamic_suggestion`
+  capabilities (for example: `prompts`, `shell_access`, `hooks`, `dynamic_suggestions`
   providers, and `structured_output`). Hosts that cannot offer a capability must
   mark it absent so the tool-chain can avoid over-promising. When a capability is
   unavailable, adapters simply fall back to reviewable docs and the explicit

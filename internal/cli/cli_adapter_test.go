@@ -174,6 +174,42 @@ func assertAdapterSyncPreservesExecutableBitFromSource(t *testing.T, adaptersRoo
 	}
 }
 
+func TestRunAdapterSyncSyncedHookRunsDirectly(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("direct executable hook test is not supported on windows")
+	}
+
+	projectRoot := prepareCLIWorkflowProject(t)
+	_ = runAdapterSyncAndParse(t, projectRoot, "opencode")
+
+	scriptPath := filepath.Join(projectRoot, ".runecontext", "adapters", "opencode", "managed", "automation", "validate_after_authoritative_edit.sh")
+	if mode := statMode(t, scriptPath).Perm(); mode&0o111 == 0 {
+		t.Fatalf("expected synced hook to be executable, got mode %s", fmt.Sprintf("%#o", mode))
+	}
+
+	fakeBin := t.TempDir()
+	calledPath := filepath.Join(projectRoot, "validate-called")
+	writeFakeRunectxExecutable(t, filepath.Join(fakeBin, "runectx"))
+
+	cmd := exec.Command(scriptPath, "runecontext/changes/CHG-2026-001-a3f2-auth-gateway/status.yaml")
+	cmd.Dir = projectRoot
+	cmd.Env = append(os.Environ(),
+		"PATH="+fakeBin+":"+os.Getenv("PATH"),
+		"RUNECTX_ARGS_OUT="+calledPath,
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("run synced hook directly: %v\n%s", err, string(out))
+	}
+
+	called, err := os.ReadFile(calledPath)
+	if err != nil {
+		t.Fatalf("read fake runectx invocation: %v", err)
+	}
+	if !strings.Contains(string(called), "validate --path "+projectRoot) {
+		t.Fatalf("expected validate invocation with project root, got %q", string(called))
+	}
+}
+
 func TestRunAdapterSyncRejectsSymlinkedManagedTarget(t *testing.T) {
 	projectRoot := t.TempDir()
 	symlinkTarget := filepath.Join(projectRoot, "outside-readme.md")

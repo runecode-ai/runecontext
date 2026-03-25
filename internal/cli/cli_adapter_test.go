@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -141,6 +142,10 @@ func TestRunAdapterSyncPreservesExecutableBitFromAdapterSource(t *testing.T) {
 		if err := os.Chmod(sourcePath, 0o755); err != nil {
 			t.Fatalf("chmod source executable: %v", err)
 		}
+		sourceData, err := os.ReadFile(sourcePath)
+		if err != nil {
+			t.Fatalf("read source file: %v", err)
+		}
 
 		projectRoot := t.TempDir()
 		var stdout bytes.Buffer
@@ -152,8 +157,17 @@ func TestRunAdapterSyncPreservesExecutableBitFromAdapterSource(t *testing.T) {
 
 		syncedPath := filepath.Join(projectRoot, ".runecontext", "adapters", "opencode", "managed", "automation", "validate_after_authoritative_edit.sh")
 		syncedMode := statMode(t, syncedPath)
-		if syncedMode.Perm() != 0o755 {
-			t.Fatalf("expected synced executable permissions 0755, got %s", fmt.Sprintf("%#o", syncedMode.Perm()))
+		syncedData, err := os.ReadFile(syncedPath)
+		if err != nil {
+			t.Fatalf("read synced file: %v", err)
+		}
+		if !bytes.Equal(sourceData, syncedData) {
+			t.Fatalf("expected synced file content to match source")
+		}
+		if runtime.GOOS != "windows" {
+			if syncedMode.Perm() != 0o755 {
+				t.Fatalf("expected synced executable permissions 0755, got %s", fmt.Sprintf("%#o", syncedMode.Perm()))
+			}
 		}
 	})
 }

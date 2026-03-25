@@ -198,7 +198,7 @@ func handleAdapterSuggestionReadError(request completionSuggestRequest, err erro
 		return nil, err
 	}
 	if request.explicitRoot {
-		return nil, fmt.Errorf("failed to load adapter packs")
+		return nil, fmt.Errorf("failed to load adapter packs for %q: %w", request.root, err)
 	}
 	return nil, nil
 }

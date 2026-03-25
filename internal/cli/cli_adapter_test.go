@@ -2,10 +2,12 @@ package cli
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRunAdapterUsageAndHelp(t *testing.T) {
@@ -70,13 +72,7 @@ func TestRunAdapterSyncAppliesManagedFilesAndManifest(t *testing.T) {
 	projectRoot := t.TempDir()
 	userConfigPath := createUserOwnedConfig(t, projectRoot)
 
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	code := Run([]string{"adapter", "sync", "--path", projectRoot, "opencode"}, &stdout, &stderr)
-	if code != exitOK {
-		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
-	}
-	fields := parseCLIKeyValueOutput(t, stdout.String())
+	fields := runAdapterSyncAndParse(t, projectRoot, "opencode")
 	if got, want := fields["mutation_performed"], "true"; got != want {
 		t.Fatalf("expected mutation_performed %q, got %q", want, got)
 	}
@@ -91,16 +87,135 @@ func TestRunAdapterSyncAppliesManagedFilesAndManifest(t *testing.T) {
 	assertAdapterManifestConvenience(t, projectRoot)
 	assertAdapterSyncBoundaries(t, userConfigPath, projectRoot)
 
-	stdout.Reset()
-	stderr.Reset()
-	code = Run([]string{"adapter", "sync", "--path", projectRoot, "opencode"}, &stdout, &stderr)
-	if code != exitOK {
-		t.Fatalf("expected idempotent sync success, got %d (%s)", code, stderr.String())
-	}
-	fields = parseCLIKeyValueOutput(t, stdout.String())
+	fields = assertAdapterSyncNoOpPreservesMtime(t, projectRoot, managedReadmePath, "opencode")
 	if got, want := fields["changed_file_count"], "0"; got != want {
 		t.Fatalf("expected idempotent sync changed_file_count %q, got %q", want, got)
 	}
+}
+
+func assertAdapterSyncNoOpPreservesMtime(t *testing.T, projectRoot, managedReadmePath, tool string) map[string]string {
+	t.Helper()
+	beforeInfo, err := os.Stat(managedReadmePath)
+	if err != nil {
+		t.Fatalf("stat managed README before re-sync: %v", err)
+	}
+	time.Sleep(2 * time.Second)
+	fields := runAdapterSyncAndParse(t, projectRoot, tool)
+	afterInfo, err := os.Stat(managedReadmePath)
+	if err != nil {
+		t.Fatalf("stat managed README after re-sync: %v", err)
+	}
+	if !afterInfo.ModTime().Equal(beforeInfo.ModTime()) {
+		t.Fatalf("expected no-op sync to preserve file mtime, before=%s after=%s", beforeInfo.ModTime().UTC().Format(time.RFC3339Nano), afterInfo.ModTime().UTC().Format(time.RFC3339Nano))
+	}
+	return fields
+}
+
+func runAdapterSyncAndParse(t *testing.T, projectRoot, tool string) map[string]string {
+	t.Helper()
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"adapter", "sync", "--path", projectRoot, tool}, &stdout, &stderr)
+	if code != exitOK {
+		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+	}
+	return parseCLIKeyValueOutput(t, stdout.String())
+}
+
+func TestRunAdapterSyncPreservesExecutableBitFromAdapterSource(t *testing.T) {
+	root, err := repoRootForTests()
+	if err != nil {
+		t.Fatal(err)
+	}
+	adaptersRoot := filepath.Join(root, "adapters")
+	t.Chdir(root)
+
+	t.Run("opencode adapter script stays executable when source is executable", func(t *testing.T) {
+		sourcePath := filepath.Join(adaptersRoot, "opencode", "automation", "validate_after_authoritative_edit.sh")
+		originalMode := statMode(t, sourcePath)
+		t.Cleanup(func() {
+			if err := os.Chmod(sourcePath, originalMode); err != nil {
+				t.Fatalf("restore source mode: %v", err)
+			}
+		})
+		if err := os.Chmod(sourcePath, 0o755); err != nil {
+			t.Fatalf("chmod source executable: %v", err)
+		}
+
+		projectRoot := t.TempDir()
+		var stdout bytes.Buffer
+		var stderr bytes.Buffer
+		code := Run([]string{"adapter", "sync", "--path", projectRoot, "opencode"}, &stdout, &stderr)
+		if code != exitOK {
+			t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
+		}
+
+		syncedPath := filepath.Join(projectRoot, ".runecontext", "adapters", "opencode", "managed", "automation", "validate_after_authoritative_edit.sh")
+		syncedMode := statMode(t, syncedPath)
+		if syncedMode.Perm() != 0o755 {
+			t.Fatalf("expected synced executable permissions 0755, got %s", fmt.Sprintf("%#o", syncedMode.Perm()))
+		}
+	})
+}
+
+func TestRunAdapterSyncRejectsSymlinkedManagedTarget(t *testing.T) {
+	projectRoot := t.TempDir()
+	symlinkTarget := filepath.Join(projectRoot, "outside-readme.md")
+	if err := os.WriteFile(symlinkTarget, []byte("outside\n"), 0o644); err != nil {
+		t.Fatalf("write symlink target: %v", err)
+	}
+	managedReadmePath := filepath.Join(projectRoot, ".runecontext", "adapters", "opencode", "managed", "README.md")
+	if err := os.MkdirAll(filepath.Dir(managedReadmePath), 0o755); err != nil {
+		t.Fatalf("mkdir managed dir: %v", err)
+	}
+	if err := os.Symlink(symlinkTarget, managedReadmePath); err != nil {
+		if os.IsPermission(err) {
+			t.Skipf("symlink creation not permitted: %v", err)
+		}
+		t.Fatalf("create managed symlink: %v", err)
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"adapter", "sync", "--path", projectRoot, "opencode"}, &stdout, &stderr)
+	if code != exitInvalid {
+		t.Fatalf("expected invalid exit code, got %d (%s)", code, stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "mutation does not support symlinked targets") {
+		t.Fatalf("expected symlink-target rejection, got %q", stderr.String())
+	}
+}
+
+func TestRunAdapterSyncRejectsSymlinkedSourceFile(t *testing.T) {
+	t.Skip("helper test no longer needed")
+}
+
+func TestCopyManagedFileRejectsSymlinkSource(t *testing.T) {
+	srcRoot := t.TempDir()
+	managedRoot := t.TempDir()
+	filePath := filepath.Join(srcRoot, "script.sh")
+	if err := os.WriteFile(filePath, []byte("echo hi"), 0o755); err != nil {
+		t.Fatalf("write script file: %v", err)
+	}
+	symlinkPath := filepath.Join(srcRoot, "link.sh")
+	if err := os.Symlink(filePath, symlinkPath); err != nil {
+		if os.IsPermission(err) {
+			t.Skipf("symlink creation not permitted: %v", err)
+		}
+		t.Fatalf("create symlink: %v", err)
+	}
+	if err := copyManagedFile(srcRoot, managedRoot, "link.sh"); err == nil {
+		t.Fatalf("expected error copying symlink source")
+	}
+}
+
+func statMode(t *testing.T, path string) os.FileMode {
+	t.Helper()
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("stat %s: %v", path, err)
+	}
+	return info.Mode()
 }
 
 func createUserOwnedConfig(t *testing.T, projectRoot string) string {

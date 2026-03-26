@@ -12,6 +12,8 @@ Each release publishes:
 - `runecontext_<tag>_linux_arm64.tar.gz`
 - `runecontext_<tag>_darwin_amd64.tar.gz`
 - `runecontext_<tag>_darwin_arm64.tar.gz`
+- `schema-bundle.tar.gz`
+- `adapter-generic.tar.gz`, `adapter-codex.tar.gz`, `adapter-claude-code.tar.gz`, and `adapter-opencode.tar.gz`
 - `SHA256SUMS`
 - a canonical unsigned release manifest
   (`runecontext_<tag>_release-manifest.json`)
@@ -21,21 +23,22 @@ Each release publishes:
 - GitHub build provenance attestations
 
 The canonical flake package emits the final versioned unsigned archives,
-`SHA256SUMS`, and the release manifest:
+bundle artifacts (repo bundle, schema bundle, adapter packs), `SHA256SUMS`, and
+the release manifest:
 
 ```sh
 nix build --no-link .#release-artifacts
 ```
 
 The release workflow generates the SBOM afterward, then signs and attests it
-separately. The canonical `SHA256SUMS` file covers the unsigned archives and
-release manifest.
+separately. The canonical `SHA256SUMS` file covers the unsigned archives,
+schema bundle, adapter packs, and release manifest.
 
-Installation now supports both of these verified flows:
+Installation now supports these verified flows:
 
-- verify and extract a repo bundle, then vendor or copy RuneContext files into a
-  target project
-- verify and install a platform `runectx` binary archive
+verify and extract a repo bundle, then vendor or copy RuneContext files into a
+  target project (this remains the canonical distribution and audit path)
+verify and install a platform `runectx` binary archive
 
 ## Prerequisites
 

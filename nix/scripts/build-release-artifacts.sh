@@ -86,6 +86,46 @@ for archive_ext in "${bundle_formats[@]}"; do
   record_archive "repo_bundle" "${archive_ext}" "${archive_file}" "${archive_sha}"
 done
 
+process_pack_archives() {
+  local kind="$1"
+  local entries_json="$2"
+
+  if [ ! -s "${entries_json}" ]; then
+    return
+  fi
+
+  while IFS= read -r pack; do
+    [ -n "${pack}" ] || continue
+    local name
+    name="$(@jq@/bin/jq -r '.name' <<<"${pack}")"
+    mapfile -t entries < <(@jq@/bin/jq -r '.entries[]' <<<"${pack}")
+
+    pack_root="release/payload/${name}"
+    rm -rf "${pack_root}"
+    mkdir -p "${pack_root}"
+
+    for entry in "${entries[@]}"; do
+      [ -n "${entry}" ] || continue
+      if [ ! -e "${entry}" ]; then
+        printf 'missing required release entry: %s\n' "${entry}" >&2
+        exit 1
+      fi
+      cp -R --parents "${entry}" "${pack_root}"
+    done
+
+    chmod -R u=rwX,go=rX "${pack_root}"
+    find "${pack_root}" -exec touch -h -d '1980-01-01T00:00:00Z' {} +
+
+    (cd release/payload && @gnutar@/bin/tar --format=gnu --sort=name --mtime='UTC 1980-01-01' --owner=0 --group=0 --numeric-owner -cf - "${name}" | @gzip@/bin/gzip -n > "../dist/${name}.tar.gz")
+
+    pack_sha="$(@coreutils@/bin/sha256sum "release/dist/${name}.tar.gz" | cut -d ' ' -f 1)"
+    record_archive "${kind}" "tar.gz" "${name}.tar.gz" "${pack_sha}"
+  done < <(@jq@/bin/jq -c '.[]' "${entries_json}")
+}
+
+process_pack_archives "schema_bundle" "@schemaBundlesFile@"
+process_pack_archives "adapter_pack" "@adapterPacksFile@"
+
 mapfile -t binaries < "@binariesFile@"
 mapfile -t targets < "@targetsFile@"
 

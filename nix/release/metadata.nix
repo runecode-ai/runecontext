@@ -41,6 +41,42 @@ let
       }
     ];
 
+    schemaBundles = [
+      {
+        name = "schema-bundle";
+        entries = [
+          "schemas"
+        ];
+      }
+    ];
+
+    adapterPacks = [
+      {
+        name = "adapter-generic";
+        entries = [
+          "adapters/generic"
+        ];
+      }
+      {
+        name = "adapter-codex";
+        entries = [
+          "adapters/codex"
+        ];
+      }
+      {
+        name = "adapter-claude-code";
+        entries = [
+          "adapters/claude-code"
+        ];
+      }
+      {
+        name = "adapter-opencode";
+        entries = [
+          "adapters/opencode"
+        ];
+      }
+    ];
+
     binaries = [
       "runectx"
     ];

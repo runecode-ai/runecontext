@@ -46,8 +46,12 @@ func TestReferenceFixtureVerifiedValidates(t *testing.T) {
 
 func TestReferenceFixtureMonorepoNestedDiscovery(t *testing.T) {
 	v := NewValidator(schemaRoot(t))
-	root := fixturePath(t, "reference-projects", "monorepo")
-	start := filepath.Join(root, "packages", "service")
+	root := t.TempDir()
+	copyDirForTest(t, fixturePath(t, "reference-projects", "monorepo"), root)
+	start := filepath.Join(root, "packages", "service", "app", "src")
+	if err := os.MkdirAll(start, 0o755); err != nil {
+		t.Fatalf("create nested child path: %v", err)
+	}
 	index, err := v.ValidateProjectWithOptions(start, ResolveOptions{ConfigDiscovery: ConfigDiscoveryNearestAncestor, ExecutionMode: ExecutionModeLocal})
 	if err != nil {
 		t.Fatalf("expected nested monorepo reference fixture to validate: %v", err)

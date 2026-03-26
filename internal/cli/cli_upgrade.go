@@ -189,12 +189,12 @@ func runUpgradePreview(project *cliProject, request upgradeRequest, machine mach
 func runUpgradeApply(project *cliProject, request upgradeRequest, machine machineOptions, stdout, stderr io.Writer) int {
 	current := strings.TrimSpace(fmt.Sprint(project.loaded.RootConfig["runecontext_version"]))
 	target := strings.TrimSpace(request.targetVersion)
+	configPath := selectedConfigPath(project.loaded)
 	if target == current {
-		output := []line{{"result", "ok"}, {"command", "upgrade"}, {"phase", "apply"}, {"root", project.absRoot}, {"selected_config_path", selectedConfigPath(project.loaded)}, {"current_version", current}, {"target_version", target}, {"state", "current"}, {"changed", "false"}}
+		output := upgradeApplyOutput(project.absRoot, configPath, current, current, target, false)
 		emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 		return exitOK
 	}
-	configPath := selectedConfigPath(project.loaded)
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines("upgrade", project.absRoot, err), machine), exitInvalid, failureClassInvalid)
@@ -210,7 +210,22 @@ func runUpgradeApply(project *cliProject, request upgradeRequest, machine machin
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines("upgrade", project.absRoot, err), machine), exitInvalid, failureClassInvalid)
 		return exitInvalid
 	}
-	output := []line{{"result", "ok"}, {"command", "upgrade"}, {"phase", "apply"}, {"root", project.absRoot}, {"selected_config_path", configPath}, {"previous_version", current}, {"target_version", target}, {"state", "upgradeable"}, {"changed", "true"}}
+	output := upgradeApplyOutput(project.absRoot, configPath, current, target, target, true)
 	emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 	return exitOK
+}
+
+func upgradeApplyOutput(root, configPath, previous, current, target string, changed bool) []line {
+	return []line{
+		{"result", "ok"},
+		{"command", "upgrade"},
+		{"phase", "apply"},
+		{"root", root},
+		{"selected_config_path", configPath},
+		{"previous_version", previous},
+		{"current_version", current},
+		{"target_version", target},
+		{"state", "current"},
+		{"changed", boolString(changed)},
+	}
 }

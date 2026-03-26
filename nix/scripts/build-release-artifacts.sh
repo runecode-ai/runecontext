@@ -98,8 +98,14 @@ process_pack_archives() {
     [ -n "${pack}" ] || continue
     local name
     name="$(@jq@/bin/jq -r '.name' <<<"${pack}")"
+    if [[ ! "${name}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+      printf 'invalid pack name: %s\n' "${name}" >&2
+      exit 1
+    fi
+    local -a entries
     mapfile -t entries < <(@jq@/bin/jq -r '.entries[]' <<<"${pack}")
 
+    local pack_root
     pack_root="release/payload/${name}"
     rm -rf "${pack_root}"
     mkdir -p "${pack_root}"
@@ -118,6 +124,7 @@ process_pack_archives() {
 
     (cd release/payload && @gnutar@/bin/tar --format=gnu --sort=name --mtime='UTC 1980-01-01' --owner=0 --group=0 --numeric-owner -cf - "${name}" | @gzip@/bin/gzip -n > "../dist/${name}.tar.gz")
 
+    local pack_sha
     pack_sha="$(@coreutils@/bin/sha256sum "release/dist/${name}.tar.gz" | cut -d ' ' -f 1)"
     record_archive "${kind}" "tar.gz" "${name}.tar.gz" "${pack_sha}"
   done < <(@jq@/bin/jq -c '.[]' "${entries_json}")

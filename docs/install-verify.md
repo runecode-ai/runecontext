@@ -36,9 +36,9 @@ schema bundle, adapter packs, and release manifest.
 
 Installation now supports these verified flows:
 
-verify and extract a repo bundle, then vendor or copy RuneContext files into a
+- verify and extract a repo bundle, then vendor or copy RuneContext files into a
   target project (this remains the canonical distribution and audit path)
-verify and install a platform `runectx` binary archive
+- verify and install a platform `runectx` binary archive
 
 ## Prerequisites
 

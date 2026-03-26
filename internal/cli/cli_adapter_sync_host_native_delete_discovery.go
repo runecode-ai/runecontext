@@ -21,6 +21,9 @@ func listExistingManagedHostNativePaths(absRoot, tool string) ([]string, error) 
 	roots := hostNativeToolRoots(tool)
 	paths := make([]string, 0)
 	for _, root := range roots {
+		if err := ensureHostNativeRootSafe(absRoot, root); err != nil {
+			return nil, err
+		}
 		items, err := listExistingManagedHostNativePathsUnderRoot(absRoot, root, tool)
 		if err != nil {
 			return nil, err
@@ -29,6 +32,11 @@ func listExistingManagedHostNativePaths(absRoot, tool string) ([]string, error) 
 	}
 	sort.Strings(paths)
 	return paths, nil
+}
+
+func ensureHostNativeRootSafe(absRoot, relRoot string) error {
+	absPath := filepath.Join(absRoot, filepath.FromSlash(relRoot))
+	return ensurePathsSafe(absRoot, absPath)
 }
 
 func hostNativeToolRoots(tool string) []string {

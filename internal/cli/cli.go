@@ -31,9 +31,9 @@ const (
 	assuranceUsage          = "runectx assurance [--json] [--non-interactive] [--dry-run] [--explain] <enable|backfill|capture> ..."
 	adapterUsage            = "runectx adapter [--json] [--non-interactive] [--dry-run] [--explain] <sync|render-host-native> ..."
 	adapterSyncUsage        = "runectx adapter sync [--json] [--non-interactive] [--dry-run] [--explain] [--path PATH] <tool>"
-	adapterRenderUsage      = "runectx adapter render-host-native [--json] [--non-interactive] [--dry-run] [--explain] [--role flow-asset|discoverability-shim] <tool> <operation>"
+	adapterRenderUsage      = "runectx adapter render-host-native [--json] [--non-interactive] [--dry-run] [--explain] [--role flow_asset|discoverability_shim] <tool> <operation>"
 	completionUsage         = "runectx completion <bash|zsh|fish|suggest|metadata>"
-	completionSuggestUsage  = "runectx completion suggest [--path PATH] [--prefix PREFIX] <change-ids|bundle-ids|promotion-targets|adapter-names>"
+	completionSuggestUsage  = "runectx completion suggest [--path PATH] [--prefix PREFIX] <change-ids|bundle-ids|promotion-targets|adapter-names|adapter-names-shell-injection>"
 	completionMetadataUsage = "runectx completion metadata"
 )
 

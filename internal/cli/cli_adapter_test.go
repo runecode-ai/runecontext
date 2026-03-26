@@ -207,17 +207,17 @@ func runAdapterSyncAndParse(t *testing.T, projectRoot, tool string) map[string]s
 	return parseCLIKeyValueOutput(t, stdout.String())
 }
 
-func TestRunAdapterSyncPreservesExecutableBitFromAdapterSource(t *testing.T) {
+func TestRunAdapterSyncWritesExpectedHostNativeFilePermissions(t *testing.T) {
 	root, err := repoRootForTests()
 	if err != nil {
 		t.Fatal(err)
 	}
 	adaptersRoot := filepath.Join(root, "adapters")
 	t.Chdir(root)
-	assertAdapterSyncPreservesExecutableBitFromSource(t, adaptersRoot)
+	assertAdapterSyncWritesExpectedFilePermissions(t, adaptersRoot)
 }
 
-func assertAdapterSyncPreservesExecutableBitFromSource(t *testing.T, adaptersRoot string) {
+func assertAdapterSyncWritesExpectedFilePermissions(t *testing.T, adaptersRoot string) {
 	t.Helper()
 
 	sourcePath := filepath.Join(adaptersRoot, "opencode", "automation", "validate_after_authoritative_edit.sh")
@@ -238,8 +238,7 @@ func assertAdapterSyncPreservesExecutableBitFromSource(t *testing.T, adaptersRoo
 		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
 	}
 
-	syncedPath := filepath.Join(projectRoot, ".runecontext", "adapters", "opencode", "managed", "automation", "validate_after_authoritative_edit.sh")
-	syncedPath = filepath.Join(projectRoot, ".opencode", "skills", "runecontext-change-new.md")
+	syncedPath := filepath.Join(projectRoot, ".opencode", "skills", "runecontext-change-new.md")
 	syncedMode := statMode(t, syncedPath)
 	syncedData, err := os.ReadFile(syncedPath)
 	if err != nil {
@@ -253,11 +252,7 @@ func assertAdapterSyncPreservesExecutableBitFromSource(t *testing.T, adaptersRoo
 	}
 }
 
-func TestRunAdapterSyncSyncedHookRunsDirectly(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("direct executable hook test is not supported on windows")
-	}
-
+func TestRunAdapterSyncSyncedSkillContainsRenderCall(t *testing.T) {
 	projectRoot := prepareCLIWorkflowProject(t)
 	_ = runAdapterSyncAndParse(t, projectRoot, "opencode")
 

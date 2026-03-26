@@ -352,7 +352,7 @@ func parseCLIKeyValueOutput(t *testing.T, output string) map[string]string {
 			continue
 		}
 		if !strings.Contains(line, "=") {
-			continue
+			t.Fatalf("expected key=value output, got %q", line)
 		}
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {

@@ -29,9 +29,6 @@ func runVersion(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	version := normalizedRunecontextVersion()
-	if !machine.jsonOutput {
-		fmt.Fprintln(stdout, version)
-	}
 	emitOutput(stdout, machine, appendMachineOptionLines([]line{{"result", "ok"}, {"command", "version"}, {"version", version}, {"runecontext_version", version}}, machine), exitOK, failureClassNone)
 	return exitOK
 }

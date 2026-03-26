@@ -267,18 +267,18 @@
   full restricted-YAML profile rather than relying on default-path assumptions.
 - [ ] Alpha-stage release metadata, module metadata, and parser behavior stay
   consistent with the documented release series and fail-closed contracts.
-- [ ] The adapter-management command exists: `runectx adapter sync <tool>`.
-- [ ] `runectx adapter sync <tool>` uses the installed or pinned RuneContext
+- [x] The adapter-management command exists: `runectx adapter sync <tool>`.
+- [x] `runectx adapter sync <tool>` uses the installed or pinned RuneContext
   release contents rather than implicitly fetching adapter packs from the
   network.
-- [ ] `runectx adapter sync <tool>` preserves explicit boundaries between
+- [x] `runectx adapter sync <tool>` preserves explicit boundaries between
   tool-managed files and user-owned config and does not silently rewrite
   arbitrary host-tool configuration.
 - [x] Machine-facing flags exist and behave consistently: `--json`,
   `--non-interactive`, `--dry-run`, and `--explain`.
-- [ ] `runectx completion <bash|zsh|fish>` exists and stays aligned with the
+- [x] `runectx completion <bash|zsh|fish>` exists and stays aligned with the
   stable CLI command/flag/value surface.
-- [ ] One typed command/operation registry drives operations docs, completion,
+- [x] One typed command/operation registry drives operations docs, completion,
   machine-readable completion metadata, and adapter-native suggestion surfaces.
 - [x] Machine-facing JSON output uses one documented envelope and failure
   taxonomy across commands rather than drifting command by command.
@@ -340,27 +340,27 @@
 
 ## 7. Adapters
 
-- [ ] The canonical operations reference exists under `runecontext/operations/`.
-- [ ] The `generic` adapter exists.
-- [ ] The `claude-code`, `opencode`, and `codex` adapters exist.
-- [ ] Adapters differ in UX only, not in core semantics or source-of-truth
+- [x] The canonical operations reference exists under `runecontext/operations/`.
+- [x] The `generic` adapter exists.
+- [x] The `claude-code`, `opencode`, and `codex` adapters exist.
+- [x] Adapters differ in UX only, not in core semantics or source-of-truth
   files.
-- [ ] The `generic` adapter remains thin and documentation-first rather than
+- [x] The `generic` adapter remains thin and documentation-first rather than
   becoming a second source of dynamic runtime behavior.
-- [ ] Adapter-layer features are implemented as thin UX over explicit core
+- [x] Adapter-layer features are implemented as thin UX over explicit core
   operations and stable candidate data rather than adapter-only hidden
   semantics.
-- [ ] At least one tool-specific adapter supports conversational flows for
+- [x] At least one tool-specific adapter supports conversational flows for
   `change new`, `change shape`, `standard discover`, and `promote` while still
   producing reviewable outputs and preserving the same underlying semantics as
   the CLI/core operations.
-- [ ] When adapters expose discovery scoping or focus inputs, those inputs map
+- [x] When adapters expose discovery scoping or focus inputs, those inputs map
   to explicit underlying operation/CLI contract fields rather than living only
   in prompt text or hidden tool state.
-- [ ] `runectx standard discover` supports those explicit scope/focus inputs as
+- [x] `runectx standard discover` supports those explicit scope/focus inputs as
   stable underlying operation/CLI-contract fields for adapter-driven targeted
   discovery.
-- [ ] Adapters and CLI shell completion reuse one canonical completion metadata
+- [x] Adapters and CLI shell completion reuse one canonical completion metadata
   model or equivalent provider surface rather than defining separate command
   semantics.
 - [ ] Adapter-driven edits to authoritative RuneContext files automatically run
@@ -369,9 +369,22 @@
 - [ ] Authoritative-file validation triggers are limited to authored RuneContext
   files rather than generated artifacts, adapter-managed files, or unrelated
   repository code.
-- [ ] Repo-aware completion/suggestion UX can surface valid change IDs, bundle
+- [x] Repo-local host-native adapter artifacts are synced as additive outputs for
+  supported tools: OpenCode (`.opencode/skills/` and `.opencode/commands/`),
+  Claude Code (`.claude/skills/` plus optional `.claude/commands/` shim), and
+  Codex (`.agents/skills/` only).
+- [x] Synced host-native artifacts use RuneContext-owned naming and ownership
+  markers so conflicts with unrelated user-owned files fail closed and future
+  uninstall/upgrade flows can target only RuneContext-managed artifacts.
+- [x] Host-native ownership remains predictable without a `.runecontext/adapters`
+  tracking tree by using stable naming plus strict ownership headers in synced
+  host-native artifacts.
+- [x] Supported hosts can keep synced prompt bodies minimal and machine-oriented
+  through explicit `runectx adapter render-host-native` shell-output injection,
+  without introducing adapter-only operation semantics.
+- [x] Repo-aware completion/suggestion UX can surface valid change IDs, bundle
   IDs, promotion targets, and adapter names without mutating project state.
-- [ ] Compatibility mode is explicit and capability-based so weaker hosts lose
+- [x] Compatibility mode is explicit and capability-based so weaker hosts lose
   convenience rather than changing RuneContext semantics.
 - [ ] Adapter packs are packaged for release.
 

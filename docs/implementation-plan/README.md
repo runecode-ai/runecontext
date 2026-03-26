@@ -355,9 +355,13 @@ and coverage stay in one place.
 - Keep adapter-triggered validation narrowly scoped to authored authoritative
   RuneContext files rather than generated artifacts, adapter-managed files, or
   unrelated repository code.
-- Keep adapter sync ownership explicit: tool-managed files live in a namespaced
-  managed subtree, user-owned config boundaries stay reviewable, and synced
-  manifests remain convenience metadata rather than correctness-critical state.
+- Keep adapter sync ownership explicit: tool-managed files live in tool-native
+  repo-local locations with strict ownership markers, and user-owned config
+  boundaries stay reviewable.
+- Keep shell-output injection support minimal and host-capability-aware:
+  supported hosts may inject `runectx`-rendered machine-oriented bodies into
+  tool-native skills/commands, while unsupported hosts keep static generated
+  bodies without changing operation semantics.
 - Keep adapter terminology crisp: `adapter` names the tool UX layer, `adapter
   pack` names the packaged release payload for an adapter, and
   `runectx adapter sync <tool>` names the local materialization surface.
@@ -415,6 +419,14 @@ and coverage stay in one place.
 - Keep alpha.7 adapter sync focused on local materialization from installed or
   pinned release contents; alpha.8 hardens release packaging and broader sync/
   update behavior without changing the local-first sync model.
+- Keep alpha.7 host-native adapter artifacts additive and removable: synced
+  OpenCode/Claude/Codex commands or skills must use RuneContext-owned names,
+  avoid clobbering existing user artifacts, and remain identifiable for a
+  future uninstall flow.
+- Keep RuneContext-managed host-native adapter artifacts upgradeable: explicit
+  `runectx upgrade` flows should refresh only the RuneContext-owned generated
+  commands/skills when release changes require new adapter outputs, while
+  leaving unrelated user-owned host artifacts untouched.
 - Keep `runectx` network access limited to an explicit, narrow `upgrade` flow;
   routine project initialization, adapter sync, validation, and other project
   file operations should use already-installed local release contents.

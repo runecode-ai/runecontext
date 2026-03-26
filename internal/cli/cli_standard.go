@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/runecode-systems/runecontext/internal/contracts"
 )
@@ -13,6 +14,8 @@ type standardDiscoverRequest struct {
 	root           string
 	explicitRoot   bool
 	changeID       string
+	scopePaths     []string
+	focus          string
 	confirmHandoff bool
 	handoffTarget  string
 }
@@ -63,12 +66,12 @@ func runStandardDiscover(args []string, machine machineOptions, stdout, stderr i
 	}
 	defer index.Close()
 
-	candidateStandards := discoverCandidateStandards(index)
+	candidateStandards := discoverCandidateStandards(index, request.scopePaths, request.focus)
 	candidateTargets := standardPromotionTargets(candidateStandards)
 	handoff := buildStandardDiscoverHandoffPlan(request, machine, index, candidateTargets)
-	output := buildStandardDiscoverOutput(project.absRoot, project.loaded, candidateStandards, candidateTargets, handoff)
+	output := buildStandardDiscoverOutput(project.absRoot, project.loaded, request, candidateStandards, candidateTargets, handoff)
 	if machine.explain {
-		output = appendStandardDiscoverExplainLines(output, project.loaded, candidateStandards, candidateTargets, handoff)
+		output = appendStandardDiscoverExplainLines(output, project.loaded, request, candidateStandards, candidateTargets, handoff)
 	}
 	emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 	return exitOK
@@ -83,6 +86,10 @@ func parseStandardDiscoverArgs(args []string) (standardDiscoverRequest, error) {
 			return assignRootFlag(args, flag, &request.root, &request.explicitRoot)
 		case "--change":
 			return assignStringFlag(args, flag, &request.changeID)
+		case "--scope-path":
+			return appendStringFlag(args, flag, &request.scopePaths)
+		case "--focus":
+			return assignStringFlag(args, flag, &request.focus)
 		case "--confirm-handoff":
 			if flag.hasValue {
 				return flag.next, fmt.Errorf("--confirm-handoff does not accept a value")
@@ -107,23 +114,17 @@ func parseStandardDiscoverArgs(args []string) (standardDiscoverRequest, error) {
 	if (request.confirmHandoff || request.handoffTarget != "") && request.changeID == "" {
 		return standardDiscoverRequest{}, fmt.Errorf("--confirm-handoff and --target require --change")
 	}
-	return request, nil
+	return finalizeStandardDiscoverRequest(request)
 }
 
-func discoverCandidateStandards(index *contracts.ProjectIndex) []string {
-	if index == nil {
-		return nil
+func finalizeStandardDiscoverRequest(request standardDiscoverRequest) (standardDiscoverRequest, error) {
+	normalized, err := normalizedScopePaths(request.scopePaths)
+	if err != nil {
+		return standardDiscoverRequest{}, err
 	}
-	paths := contracts.SortedKeys(index.Standards)
-	candidates := make([]string, 0, len(paths))
-	for _, path := range paths {
-		record := index.Standards[path]
-		if record == nil || record.Status != contracts.StandardStatusActive {
-			continue
-		}
-		candidates = append(candidates, path)
-	}
-	return candidates
+	request.scopePaths = normalized
+	request.focus = strings.TrimSpace(request.focus)
+	return request, nil
 }
 
 func standardPromotionTargets(paths []string) []string {
@@ -134,13 +135,15 @@ func standardPromotionTargets(paths []string) []string {
 	return targets
 }
 
-func buildStandardDiscoverOutput(absRoot string, loaded *contracts.LoadedProject, candidateStandards, candidateTargets []string, handoff standardDiscoverHandoffPlan) []line {
+func buildStandardDiscoverOutput(absRoot string, loaded *contracts.LoadedProject, request standardDiscoverRequest, candidateStandards, candidateTargets []string, handoff standardDiscoverHandoffPlan) []line {
 	output := []line{
 		{"result", "ok"},
 		{"command", standardDiscoverCommand},
 		{"root", absRoot},
 		{"selected_config_path", selectedConfigPath(loaded)},
 		{"mutation_performed", "false"},
+		{"discovery_scope_count", fmt.Sprintf("%d", len(request.scopePaths))},
+		{"discovery_focus", request.focus},
 		{"candidate_standard_count", fmt.Sprintf("%d", len(candidateStandards))},
 	}
 	if loaded != nil && loaded.Resolution != nil {
@@ -150,6 +153,7 @@ func buildStandardDiscoverOutput(absRoot string, loaded *contracts.LoadedProject
 			line{"source_mode", string(loaded.Resolution.SourceMode)},
 		)
 	}
+	output = appendStringItems(output, "discovery_scope", request.scopePaths)
 	output = appendStringItems(output, "candidate_standard", candidateStandards)
 	output = append(output, line{"candidate_promotion_target_count", fmt.Sprintf("%d", len(candidateTargets))})
 	output = appendStringItems(output, "candidate_promotion_target", candidateTargets)
@@ -169,10 +173,12 @@ func buildStandardDiscoverOutput(absRoot string, loaded *contracts.LoadedProject
 	return output
 }
 
-func appendStandardDiscoverExplainLines(lines []line, loaded *contracts.LoadedProject, candidateStandards, candidateTargets []string, handoff standardDiscoverHandoffPlan) []line {
+func appendStandardDiscoverExplainLines(lines []line, loaded *contracts.LoadedProject, request standardDiscoverRequest, candidateStandards, candidateTargets []string, handoff standardDiscoverHandoffPlan) []line {
 	lines = append(lines,
 		line{"explain_scope", "standards-discovery,promotion-handoff"},
 		line{"explain_advisory_only", "true"},
+		line{"explain_discovery_scope_count", fmt.Sprintf("%d", len(request.scopePaths))},
+		line{"explain_discovery_focus", request.focus},
 		line{"explain_candidate_standard_count_reason", fmt.Sprintf("%d active standards discovered from the validated project index", len(candidateStandards))},
 		line{"explain_candidate_promotion_target_count_reason", fmt.Sprintf("%d promotion targets emitted for downstream runectx promote usage", len(candidateTargets))},
 	)

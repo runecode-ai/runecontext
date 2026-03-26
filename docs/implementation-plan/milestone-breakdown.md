@@ -1227,9 +1227,9 @@ tools while preserving one core model.
   adapter-managed files, and unrelated repository code must not trigger this
   rule.
 - Adapter sync should define explicit ownership boundaries: tool-managed files
-  live in a namespaced managed subtree, user-owned config updates stay explicit
-  and reviewable, and any synced manifest remains convenience metadata rather
-  than correctness-critical state.
+  live in tool-native repo-local roots with strict ownership markers,
+  user-owned config updates stay explicit and reviewable, and sync does not
+  rely on correctness-critical hidden state.
 - The `generic` adapter should remain intentionally thin and documentation-first:
   manual workflows, CLI-assisted workflows, non-agent examples, and reviewable
   guidance. Dynamic suggestions and tool-native automation belong to shared CLI
@@ -1237,10 +1237,55 @@ tools while preserving one core model.
 - Compatibility mode should be capability-based and explicit. Weaker hosts may
   fall back from prompts, hooks, or dynamic suggestions to docs and explicit CLI
   commands, but they must not redefine RuneContext semantics.
+- Compatibility-mode guidance should define the capability classes supported by
+  each adapter host and point to the stable contract in
+  `docs/implementation-plan/adapter-host-capabilities.md`. That contract spells out
+  how hosts declare `prompts`, `shell_access`, `hooks`, `dynamic_suggestions`,
+  and `structured_output` capabilities along with the downgrade behavior they
+  must document when any capability is absent.
+- Compatibility-mode guidance should spell out how adapters declare their host
+  capabilities (for example: `prompts`, `shell_access`, `hooks`, `dynamic_suggestions`
+  providers, and `structured_output`). Hosts that cannot offer a capability must
+  mark it absent so the tool-chain can avoid over-promising. When a capability is
+  unavailable, adapters simply fall back to reviewable docs and the explicit
+  CLI commands that already ship in RuneContext rather than inventing hidden
+  runtime behavior:
+  - Prompt-driven flows degrade into static guidance text plus direct `runectx`
+    commands for the same operations, so conversational skips do not lose
+    semantics.
+  - Shell access drops to documented command invocations; conversational hosts
+    that cannot launch shell helpers should show the CLI steps and candidate
+    data instead of trying to execute anything locally.
+  - Hook/run scripts become documented mutations tied to `runectx` operations when
+    hooks cannot run in the host; readers still see the same mutation intent,
+    but the host leaves execution to the CLI with explicit commands.
+  - Dynamic suggestions fall back to the canonical completion metadata and
+    manual CLI exploration guidance when a host cannot provide live inline
+    completion; adapters simply point back to `runectx completion` output and
+    stable candidate data to avoid hidden guesses.
+  - Structured-output integrations revert to publishing the CLI flag set and
+    machine-readable candidate metadata for the same operation so reviewable
+    artifacts cover any semantic payload even when the host cannot consume
+    structured JSON directly.
 - Alpha.7 should deliver local-only `runectx adapter sync <tool>` behavior
   against installed or pinned release contents; alpha.8 later hardens release
   packaging and broader sync/update behavior without changing that local-first
   boundary.
+- Shell completion remains shell-specific. Adapter sync should not compile Bash,
+  Zsh, or Fish completion output into OpenCode, Claude Code, or Codex adapter
+  artifacts.
+- Repo-local host-native adapter artifacts should stay additive,
+  namespaced/identifiable, and uninstall-friendly. Prefer `runecontext:`
+  naming when the host surface allows it; otherwise fall back to
+  `runecontext-`. Adapter sync must never overwrite or remove unrelated
+  user-owned commands, skills, or host config.
+- Alpha.7 host-native adapter generation should target the recommended surface
+  for each tool: OpenCode syncs skills plus commands, Claude Code syncs skills
+  plus an optional command shim, and Codex syncs skills only.
+- Where host docs support shell-output injection, alpha.7 host-native artifacts
+  should prefer static ownership headers plus injected minimal machine-oriented
+  `runectx` render bodies instead of duplicating large command prose directly in
+  synced artifacts.
 
 Implementation note: to keep reviews manageable and avoid baking more command
 metadata duplication into adapters, alpha.7 work is grouped into the following
@@ -1248,110 +1293,154 @@ recommended branch cuts.
 
 ### Recommended Branch Cut 1: Canonical operations reference, metadata registry, and static completion
 
-- [ ] Issue: author the canonical in-project operations reference under
+- [x] Issue: author the canonical in-project operations reference under
   `runecontext/operations/`.
-- [ ] Issue: define adapter-to-core operation mapping rules.
-- [ ] Issue: define how adapters consume or derive from the canonical
+- [x] Issue: define adapter-to-core operation mapping rules.
+- [x] Issue: define how adapters consume or derive from the canonical
   operations reference without redefining semantics.
-- [ ] Issue: define additive operation/CLI-contract extensions needed for
+- [x] Issue: define additive operation/CLI-contract extensions needed for
   conversational adapter UX, including explicit standards-discovery scope-path
   and user-supplied focus inputs, without changing the completed alpha.5 core
   command semantics.
-- [ ] Issue: implement one typed internal command/operation registry as the
+- [x] Issue: implement one typed internal command/operation registry as the
   canonical source for command, subcommand, flag, and stable enum/value
   metadata.
-- [ ] Issue: define a canonical completion metadata model and machine-readable
+- [x] Issue: define a canonical completion metadata model and machine-readable
   export derived from that registry rather than from hand-authored docs or help
   text parsing.
-- [ ] Issue: implement `runectx completion <bash|zsh|fish>` generation from the
+- [x] Issue: implement `runectx completion <bash|zsh|fish>` generation from the
   canonical registry.
-- [ ] Issue: support static command, subcommand, and flag completion from the
+- [x] Issue: support static command, subcommand, and flag completion from the
   canonical CLI contract.
-- [ ] Issue: support enum/value completion for stable machine-facing and
+- [x] Issue: support enum/value completion for stable machine-facing and
   workflow flags.
-- [ ] Issue: add golden tests for generated Bash, Zsh, and Fish completion
+- [x] Issue: add golden tests for generated Bash, Zsh, and Fish completion
   scripts.
-- [ ] Issue: add parity tests proving completion metadata stays aligned with the
+- [x] Issue: add parity tests proving completion metadata stays aligned with the
   actual command and flag surface.
 
 ### Recommended Branch Cut 2: Generic adapter and repo-aware read-only suggestions
 
-- [ ] Issue: author the `generic` adapter as a thin docs-first baseline for
+- [x] Issue: author the `generic` adapter as a thin docs-first baseline for
   manual, CLI-assisted, and non-agent workflows.
-- [ ] Issue: provide example flows for manual, CLI-assisted, and non-agent use.
-- [ ] Issue: document the conversational adapter pattern for host-native
+- [x] Issue: provide example flows for manual, CLI-assisted, and non-agent use.
+- [x] Issue: document the conversational adapter pattern for host-native
   chat-driven flows that map back to explicit RuneContext operations instead of
   questionnaire-style UX or adapter-only state.
-- [ ] Issue: document that dynamic suggestions are a shared CLI/completion
+- [x] Issue: document that dynamic suggestions are a shared CLI/completion
   feature rather than `generic` adapter-specific hidden behavior.
-- [ ] Issue: implement repo-aware dynamic suggestions for change IDs, bundle IDs,
+- [x] Issue: implement repo-aware dynamic suggestions for change IDs, bundle IDs,
   promotion target paths, and adapter names where applicable.
-- [ ] Issue: ensure completion and suggestion flows never mutate project state,
+- [x] Issue: ensure completion and suggestion flows never mutate project state,
   honor nearest-root discovery and explicit `--path`, and fail soft outside
   RuneContext repositories.
-- [ ] Issue: add fixture tests for repo-aware suggestions across embedded,
+- [x] Issue: add fixture tests for repo-aware suggestions across embedded,
   linked, and monorepo projects.
 
 ### Recommended Branch Cut 3: Adapter sync, one real tool adapter, and validation-hook boundaries
 
-- [ ] Issue: implement the `runectx adapter sync <tool>` command as the
+- [x] Issue: implement the `runectx adapter sync <tool>` command as the
   adapter-management CLI surface for local adapter materialization from the
   installed or pinned RuneContext release.
-- [ ] Issue: define merge-aware adapter sync/update behavior, including managed
+- [x] Issue: define merge-aware adapter sync/update behavior, including managed
   file boundaries, reviewable diffs, and explicit local config updates where
   required.
-- [ ] Issue: ensure adapter sync writes tool-managed files only inside a
-  namespaced managed subtree and never silently rewrites arbitrary user-owned
-  tool configuration.
-- [ ] Issue: define adapter-managed manifest contents for synced packs as
-  convenience metadata only, not correctness-critical state.
-- [ ] Issue: ensure adapter sync never fetches from GitHub or any other network
+- [x] Issue: ensure adapter sync writes tool-managed files only inside a
+  tool-native repo-local artifact roots and never silently rewrites arbitrary
+  user-owned tool configuration.
+- [x] Issue: keep adapter sync implementation host-native-only (no mirrored
+  `.runecontext/adapters` tracking tree), with ownership-header-based
+  no-clobber and stale cleanup behavior.
+- [x] Issue: ensure adapter sync never fetches from GitHub or any other network
   source; network access is reserved for explicit `runectx init` and
   `runectx upgrade` flows.
-- [ ] Issue: ensure adapters never introduce tool-specific source-of-truth
+- [x] Issue: ensure adapters never introduce tool-specific source-of-truth
   files.
-- [ ] Issue: define the adapter rule that conversational UX for `change new`,
+- [x] Issue: add a read-only `runectx adapter render-host-native` surface for
+  machine-oriented adapter prompt-body rendering, and use shell-output
+  injection for hosts that support it without changing the underlying CLI
+  operation semantics.
+- [x] Issue: define the adapter rule that conversational UX for `change new`,
   `change shape`, `standard discover`, and `promote` remains a thin wrapper
   over explicit core operations, stable candidate data, and reviewable outputs.
-- [ ] Issue: ensure explicit promotion candidate/target data is reusable by tool
+- [x] Issue: ensure explicit promotion candidate/target data is reusable by tool
   adapters so conversational adapter flows do not depend on hidden session
   state or questionnaire-style handoff.
-- [ ] Issue: define the authoritative-file rule for adapter-triggered
+- [x] Issue: define the authoritative-file rule for adapter-triggered
   `runectx validate`, limited to authored RuneContext files and excluding
   generated artifacts, adapter-managed files, and unrelated repository code.
-- [ ] Issue: author one tool-specific adapter end to end.
-- [ ] Issue: make that first end-to-end tool adapter support conversational
+- [x] Issue: author one tool-specific adapter end to end.
+- [x] Issue: make that first end-to-end tool adapter support conversational
   flows for `change new`, `change shape`, `standard discover`, and `promote`
   without changing core semantics.
-- [ ] Issue: add tool-native automation/skills that run `runectx validate`
+- [x] Issue: add tool-native automation/skills that run `runectx validate`
   after edits to authoritative RuneContext files and surface failures
   immediately.
-- [ ] Issue: add smoke and parity tests for the first end-to-end tool adapter,
+- [x] Issue: add smoke and parity tests for the first end-to-end tool adapter,
   sync behavior, managed-file boundaries, validate-after-edit triggering, and
   conversational-flow parity with the underlying CLI/operation contracts.
 
 ### Recommended Branch Cut 4: Remaining tool-specific adapters, compatibility mode, and parity hardening
 
-- [ ] Issue: author the remaining `claude-code`, `opencode`, and `codex`
+- [x] Issue: author the remaining `claude-code`, `opencode`, and `codex`
   adapters.
-- [ ] Issue: define compatibility-mode guidance for hosts with weaker
+- [x] Issue: define compatibility-mode guidance for hosts with weaker
   interaction capabilities, including capability declarations and downgrade
   behavior for prompts, shell access, hooks, dynamic suggestions, and
   structured-output integration.
-- [ ] Issue: add tool-native suggestion/autocomplete integrations that reuse the
+- [x] Issue: add tool-native suggestion/autocomplete integrations that reuse the
   canonical completion metadata for hosts that support richer UX.
-- [ ] Issue: add parity checks proving that richer conversational adapter UX for
+- [x] Issue: add parity checks proving that richer conversational adapter UX for
   `change new`, `change shape`, `standard discover`, and `promote` still maps
   back to the same explicit core operations and candidate data across hosts.
-- [ ] Issue: add smoke tests for the `generic`, `claude-code`, `opencode`, and
+- [x] Issue: add smoke tests for the `generic`, `claude-code`, `opencode`, and
   `codex` adapters.
-- [ ] Issue: add parity checks showing adapter flows map back to the same core
+- [x] Issue: add parity checks showing adapter flows map back to the same core
   operations and expected file mutations.
-- [ ] Issue: add tests ensuring adapters do not introduce hidden state or
+- [x] Issue: add tests ensuring adapters do not introduce hidden state or
   adapter-only correctness requirements.
-- [ ] Issue: add tests ensuring adapter-driven edits to authoritative
+- [x] Issue: add tests ensuring adapter-driven edits to authoritative
   RuneContext files automatically invoke `runectx validate` while unrelated code
   edits do not trigger unnecessary validation.
+
+### Recommended Branch Cut 5: Repo-local host-native adapter artifacts
+
+- [x] Issue: define the repo-local host-native artifact layouts that adapter sync
+  may materialize for supported tools without reviving `runecontext/commands/`
+  as a RuneContext source-of-truth surface.
+- [x] Issue: sync OpenCode-native skills and commands into the target
+  repository's supported repo-local locations (`.opencode/skills/` and
+  `.opencode/commands/`) as additive adapter outputs.
+- [x] Issue: sync Claude Code-native skills into `.claude/skills/` and, where
+  useful for discoverability, add an optional command shim under
+  `.claude/commands/` without making commands the canonical adapter surface.
+- [x] Issue: sync Codex-native skills into `.agents/skills/` and keep Codex
+  host-native integration skills-only unless Codex later adds a documented
+  repo-local command surface.
+- [x] Issue: ensure generated host-native artifacts use RuneContext-owned,
+  uninstall-friendly names: prefer `runecontext:*` when the host format allows
+  it, otherwise use `runecontext-`.
+- [x] Issue: ensure every generated host-native artifact is identifiable as
+  RuneContext-managed via stable naming, file placement, and ownership markers
+  so a future `runectx uninstall` flow can remove only RuneContext-installed
+  artifacts.
+- [x] Issue: ensure adapter sync never removes, rewrites, or silently merges
+  into unrelated existing user-owned commands, skills, or host config; any path
+  or name conflict with a non-RuneContext artifact must fail closed with
+  explicit diagnostics.
+- [x] Issue: keep host-native command/skill artifacts as thin wrappers over the
+  same explicit `runectx` operations and candidate data already documented for
+  each adapter flow.
+- [x] Issue: document which synced files are host-native discoverability shims
+  versus canonical adapter flow assets so future uninstall/update logic can
+  treat them predictably.
+- [x] Issue: define upgrade ownership for host-native adapter artifacts so
+  `runectx upgrade` can refresh RuneContext-managed commands/skills when the
+  underlying CLI contract or adapter flow templates change, without touching
+  unrelated user-owned host artifacts.
+- [x] Issue: add smoke tests for host-native artifact sync, conflict detection,
+  ownership-marker preservation, and no-clobber behavior when repositories
+  already contain custom tool commands or skills.
 
 ### Exit Criteria
 
@@ -1373,6 +1462,12 @@ recommended branch cuts.
   adapter-pack contents without requiring network access.
 - Adapter sync preserves explicit boundaries between tool-managed files and
   user-owned config.
+- Repo-local host-native adapter artifacts, where supported, are additive,
+  tool-appropriate, and identifiable enough for future uninstall/removal
+  without touching unrelated user-owned host artifacts.
+- Repo-local host-native adapter artifacts are also upgradeable: explicit
+  `runectx upgrade` rerenders and refreshes RuneContext-managed command/skill
+  outputs when adapter or CLI contract changes require it.
 - Adapter behavior is covered by parity and smoke tests rather than manual
   walkthroughs only.
 
@@ -1433,6 +1528,11 @@ install/upgrade paths and end-to-end reference fixtures.
   repo-local files, git upgrades update only the pinned source reference fields
   in `runecontext.yaml`, and `type: path` sources are externally managed and
   must never be mutated by `runectx`.
+- Upgrade planning should treat RuneContext-managed host-native adapter
+  artifacts as derived project assets: when the installed release changes their
+  expected contents, preview should surface those updates and apply should
+  refresh only the RuneContext-owned command/skill files while leaving
+  unrelated user-owned host artifacts untouched.
 - Embedded upgrade conflict handling should fail closed: if user-modified
   managed files are detected, preview emits a reviewable conflict set and
   `runectx upgrade apply` refuses to proceed rather than auto-merging or
@@ -1478,6 +1578,12 @@ the following recommended branch cuts.
 - [ ] Issue: harden repeated adapter sync behavior to be namespaced and
   merge-aware, with normal adapter sync remaining local-only against installed
   release content.
+- [ ] Issue: ensure preview/apply upgrade logic detects stale
+  RuneContext-managed host-native adapter artifacts and includes their refresh
+  plan when the target release changes generated command/skill outputs.
+- [ ] Issue: ensure upgrade apply refreshes only RuneContext-owned host-native
+  adapter artifacts, preserves unrelated user-owned host commands/skills, and
+  fails closed on ownership-marker conflicts.
 - [ ] Issue: ensure `validate` and `doctor` report unsupported version
   combinations, stale mixed-version trees after merge/rebase, integrity posture
   issues, and upgrade-readiness diagnostics.
@@ -1557,6 +1663,9 @@ the following recommended branch cuts.
   network access is confined to explicit `runectx upgrade` operations.
 - Mixed-version trees fail closed and are repairable through explicit reruns of
   `runectx upgrade` rather than hidden background migration.
+- Explicit upgrade runs refresh RuneContext-managed host-native adapter
+  artifacts when release changes require new command/skill outputs, without
+  clobbering unrelated user-owned host artifacts.
 - Embedded upgrade conflicts fail closed with reviewable conflict reporting
   rather than auto-merge behavior.
 - Windows MVP support is validated through portability and repo-bundle install

@@ -89,7 +89,7 @@ func hostNativeRenderMetadata(request adapterRenderRequest, flow hostNativeFlow)
 		role:                role,
 		commandPath:         path,
 		usage:               command.Usage,
-		requiredFlags:       requiredFlagsFromUsage(command.Usage, command.Flags),
+		requiredFlags:       requiredFlagsFromMetadata(command.Flags),
 		requiredPositionals: requiredPositionalsFromUsage(command.Usage, command.Positionals),
 	}, nil
 }
@@ -111,10 +111,10 @@ func commandByPath(path string) (CommandMetadata, bool) {
 	return walk(registry.Commands)
 }
 
-func requiredFlagsFromUsage(usage string, flags []FlagMetadata) []string {
+func requiredFlagsFromMetadata(flags []FlagMetadata) []string {
 	required := make([]string, 0)
 	for _, flag := range flags {
-		if !strings.Contains(usage, "["+flag.Name) {
+		if flag.Required {
 			required = append(required, flag.Name)
 		}
 	}

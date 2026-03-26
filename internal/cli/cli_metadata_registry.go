@@ -23,6 +23,7 @@ type FlagMetadata struct {
 	Name       string
 	Value      ValueSpec
 	Repeatable bool
+	Required   bool
 }
 
 // PositionalMetadata describes one positional argument.
@@ -146,8 +147,8 @@ func assuranceCommandMetadata() CommandMetadata {
 
 func changeNewFlags() []FlagMetadata {
 	return []FlagMetadata{
-		{Name: "--title", Value: textValueSpec()},
-		{Name: "--type", Value: enumValueSpec("project", "feature", "bug", "standard", "chore")},
+		{Name: "--title", Value: textValueSpec(), Required: true},
+		{Name: "--type", Value: enumValueSpec("project", "feature", "bug", "standard", "chore"), Required: true},
 		{Name: "--size", Value: enumValueSpec("small", "medium", "large")},
 		{Name: "--bundle", Value: textValueWithSuggestionSpec(suggestionProviderBundleIDs), Repeatable: true},
 		{Name: "--shape", Value: enumValueSpec("minimum", "full")},

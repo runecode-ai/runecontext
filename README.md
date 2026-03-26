@@ -157,10 +157,11 @@ Current CLI scope:
   - Claude Code syncs `.claude/skills/` and `.claude/commands/`
   - Codex syncs `.agents/skills/`
   - supports `--json`, `--non-interactive`, `--dry-run`, and `--explain`
-- `runectx adapter render-host-native [--role flow-asset|discoverability-shim] <tool> <operation>`
+- `runectx adapter render-host-native [--role flow_asset|discoverability_shim] <tool> <operation>`
   - emits minimal machine-oriented markdown bodies for supported shell-injection hosts
   - intended for tool-native skills/commands rather than direct day-to-day manual use
   - supports `--json`, `--non-interactive`, `--dry-run`, and `--explain`
+  - The CLI canonicalizes roles to the underscore forms shown here; hyphenated aliases such as `flow-asset`/`discoverability-shim` are still accepted for convenience.
 - `runectx completion suggest [--path PATH] [--prefix PREFIX] <provider>`
   - emits repo-aware read-only suggestions for change IDs, bundle IDs, promotion targets, and adapter names
 - `runectx completion metadata`

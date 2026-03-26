@@ -15,7 +15,7 @@ RuneContext exposes a stable CLI operation surface through `runectx`:
 - `assurance enable|backfill|capture`
 - `adapter sync <tool>`
 - `completion <bash|zsh|fish>`
-- `completion suggest <change-ids|bundle-ids|promotion-targets|adapter-names>`
+- `completion suggest <change-ids|bundle-ids|promotion-targets|adapter-names|adapter-names-shell-injection>`
 - `completion metadata`
 
 ## Operation Boundaries

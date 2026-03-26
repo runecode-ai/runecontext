@@ -16,6 +16,7 @@ Providers:
 - `bundle-ids`
 - `promotion-targets`
 - `adapter-names`
+- `adapter-names-shell-injection`
 
 ## What Is Included
 

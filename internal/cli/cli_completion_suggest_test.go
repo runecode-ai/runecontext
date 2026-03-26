@@ -34,7 +34,7 @@ func TestRunCompletionSuggestUsageAndHelp(t *testing.T) {
 
 func TestRunCompletionSuggestSoftFailsOutsideRuneContextProject(t *testing.T) {
 	t.Chdir(t.TempDir())
-	for _, provider := range []string{suggestionProviderChangeIDs, suggestionProviderBundleIDs, suggestionProviderPromotionTargets, suggestionProviderAdapterNames} {
+	for _, provider := range []string{suggestionProviderChangeIDs, suggestionProviderBundleIDs, suggestionProviderPromotionTargets} {
 		t.Run(provider, func(t *testing.T) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
@@ -97,6 +97,15 @@ func TestHandleAdapterSuggestionReadErrorIncludesContextForExplicitRoot(t *testi
 	}
 }
 
+func TestHandleAdapterSuggestionRootErrorImplicitRootPropagatesUnexpectedErrors(t *testing.T) {
+	request := completionSuggestRequest{root: ".", explicitRoot: false}
+	want := errors.New("schema discovery failed")
+	_, err := handleAdapterSuggestionRootError(request, want)
+	if !errors.Is(err, want) {
+		t.Fatalf("expected implicit-root unexpected error propagation, got %v", err)
+	}
+}
+
 func assertCompletionSuggestInvalid(t *testing.T, args []string, wantSubstring string) {
 	t.Helper()
 	var stdout bytes.Buffer
@@ -132,6 +141,15 @@ func TestRunCompletionSuggestAdapterNames(t *testing.T) {
 			t.Fatalf("expected adapter suggestion %q in %#v", want, items)
 		}
 	}
+}
+
+func TestRunCompletionSuggestAdapterNamesInvalidWhenSchemaDiscoveryFails(t *testing.T) {
+	t.Chdir(t.TempDir())
+	assertCompletionSuggestInvalid(
+		t,
+		[]string{"completion", "suggest", suggestionProviderAdapterNames},
+		"could not locate RuneContext schemas",
+	)
 }
 
 func TestRunCompletionSuggestRepoModesWithPath(t *testing.T) {

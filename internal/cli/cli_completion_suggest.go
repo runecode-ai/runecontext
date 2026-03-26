@@ -227,7 +227,7 @@ func handleAdapterSuggestionRootError(request completionSuggestRequest, err erro
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
-	return nil, nil
+	return nil, err
 }
 
 func handleAdapterSuggestionReadError(request completionSuggestRequest, err error) ([]string, error) {

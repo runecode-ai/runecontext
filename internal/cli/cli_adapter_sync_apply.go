@@ -23,7 +23,7 @@ func applyAdapterSyncMutations(state adapterSyncState, plannedWrites map[string]
 	if err := applyHostNativeArtifactWrites(state.absRoot, state.hostNativeFiles, plannedWrites); err != nil {
 		return err
 	}
-	if err := applyHostNativeArtifactDeletes(state.absRoot, state.plan); err != nil {
+	if err := applyHostNativeArtifactDeletes(state.absRoot, state.tool, state.plan); err != nil {
 		return err
 	}
 	return nil

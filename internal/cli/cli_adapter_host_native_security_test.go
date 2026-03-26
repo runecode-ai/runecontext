@@ -133,3 +133,60 @@ func TestRunAdapterSyncIgnoresManagedFileFromDifferentTool(t *testing.T) {
 		t.Fatalf("expected foreign-tool managed file preserved, got %v", err)
 	}
 }
+
+func TestApplyAdapterSyncDeleteRejectsCrossToolSwap(t *testing.T) {
+	projectRoot := t.TempDir()
+	runAdapterSyncAndParse(t, projectRoot, "opencode")
+
+	staleRel := ".opencode/skills/runecontext-delete-cross-tool.md"
+	stalePath := filepath.Join(projectRoot, filepath.FromSlash(staleRel))
+	if err := os.MkdirAll(filepath.Dir(stalePath), 0o755); err != nil {
+		t.Fatalf("mkdir stale dir: %v", err)
+	}
+	opencodeManaged := "---\ndescription: opencode stale marker\n---\n<!-- runecontext-managed-artifact: host-native-v1 -->\n<!-- runecontext-tool: opencode -->\n<!-- runecontext-kind: flow_asset -->\n<!-- runecontext-id: runecontext:delete-cross-tool -->\n"
+	if err := os.WriteFile(stalePath, []byte(opencodeManaged), 0o644); err != nil {
+		t.Fatalf("write opencode stale file: %v", err)
+	}
+
+	state, err := buildAdapterSyncState(adapterRequest{root: projectRoot, explicitRoot: true, tool: "opencode"})
+	if err != nil {
+		t.Fatalf("build state: %v", err)
+	}
+	claudeReplacement := "---\nname: runecontext-delete-cross-tool\ndescription: claude replacement\n---\n<!-- runecontext-managed-artifact: host-native-v1 -->\n<!-- runecontext-tool: claude-code -->\n<!-- runecontext-kind: flow_asset -->\n<!-- runecontext-id: runecontext:delete-cross-tool -->\n"
+	if err := os.WriteFile(stalePath, []byte(claudeReplacement), 0o644); err != nil {
+		t.Fatalf("write claude replacement stale file: %v", err)
+	}
+	if err := applyAdapterSync(state); err == nil {
+		t.Fatalf("expected cross-tool delete ownership rejection")
+	}
+}
+
+func TestParseHostNativeOwnershipHeaderAcceptsCRLF(t *testing.T) {
+	content := strings.Join([]string{
+		"---",
+		"description: windows newlines",
+		"---",
+		"<!-- runecontext-managed-artifact: host-native-v1 -->",
+		"<!-- runecontext-tool: opencode -->",
+		"<!-- runecontext-kind: flow_asset -->",
+		"<!-- runecontext-id: runecontext:change-new -->",
+	}, "\r\n") + "\r\n"
+	if _, ok := parseHostNativeOwnershipHeader([]byte(content)); !ok {
+		t.Fatalf("expected CRLF ownership header parsing to succeed")
+	}
+}
+
+func TestParseHostNativeOwnershipHeaderAcceptsCROnly(t *testing.T) {
+	content := strings.Join([]string{
+		"---",
+		"description: classic mac newlines",
+		"---",
+		"<!-- runecontext-managed-artifact: host-native-v1 -->",
+		"<!-- runecontext-tool: opencode -->",
+		"<!-- runecontext-kind: flow_asset -->",
+		"<!-- runecontext-id: runecontext:change-new -->",
+	}, "\r") + "\r"
+	if _, ok := parseHostNativeOwnershipHeader([]byte(content)); !ok {
+		t.Fatalf("expected CR-only ownership header parsing to succeed")
+	}
+}

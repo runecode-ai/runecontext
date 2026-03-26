@@ -52,7 +52,7 @@ func validateHostNativeOwnershipForDelete(content []byte, rel, tool string) erro
 }
 
 func parseHostNativeOwnershipHeader(content []byte) (hostNativeOwnershipHeader, bool) {
-	lines := strings.Split(string(content), "\n")
+	lines := strings.Split(normalizeOwnershipLineEndings(string(content)), "\n")
 	start := skipFrontmatter(lines)
 	if len(lines[start:]) < 4 {
 		return hostNativeOwnershipHeader{}, false
@@ -73,6 +73,11 @@ func parseHostNativeOwnershipHeader(content []byte) (hostNativeOwnershipHeader, 
 		return hostNativeOwnershipHeader{}, false
 	}
 	return hostNativeOwnershipHeader{Tool: tool, Kind: kind, ID: id}, true
+}
+
+func normalizeOwnershipLineEndings(content string) string {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+	return strings.ReplaceAll(content, "\r", "\n")
 }
 
 func skipFrontmatter(lines []string) int {

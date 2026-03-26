@@ -46,21 +46,21 @@ func validateExistingHostNativeForWrite(path, rel string, desired []byte) error 
 	return validateHostNativeOwnershipForWrite(current, rel, hostNativeArtifactFromContent(rel, desired))
 }
 
-func applyHostNativeArtifactDeletes(absRoot string, plan []contracts.FileMutation) error {
+func applyHostNativeArtifactDeletes(absRoot, tool string, plan []contracts.FileMutation) error {
 	for _, mutation := range plan {
 		if mutation.Action != "deleted" || !isHostNativePath(mutation.Path) {
 			continue
 		}
-		if err := removeHostNativeArtifact(absRoot, mutation.Path); err != nil {
+		if err := removeHostNativeArtifact(absRoot, mutation.Path, tool); err != nil {
 			return err
 		}
 	}
 	return pruneHostNativeRoots(absRoot)
 }
 
-func removeHostNativeArtifact(absRoot, rel string) error {
+func removeHostNativeArtifact(absRoot, rel, tool string) error {
 	path := filepath.Join(absRoot, filepath.FromSlash(rel))
-	if err := validateExistingHostNativeForDelete(path, rel); err != nil {
+	if err := validateExistingHostNativeForDelete(path, rel, tool); err != nil {
 		return err
 	}
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
@@ -69,7 +69,7 @@ func removeHostNativeArtifact(absRoot, rel string) error {
 	return nil
 }
 
-func validateExistingHostNativeForDelete(path, rel string) error {
+func validateExistingHostNativeForDelete(path, rel, tool string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -77,11 +77,7 @@ func validateExistingHostNativeForDelete(path, rel string) error {
 		}
 		return err
 	}
-	header, ok := parseHostNativeOwnershipHeader(data)
-	if !ok {
-		return validateHostNativeOwnershipForDelete(data, rel, "")
-	}
-	return validateHostNativeOwnershipForDelete(data, rel, header.Tool)
+	return validateHostNativeOwnershipForDelete(data, rel, tool)
 }
 
 func hostNativeArtifactFromContent(rel string, content []byte) hostNativeArtifact {

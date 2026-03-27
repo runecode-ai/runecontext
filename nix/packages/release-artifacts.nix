@@ -73,6 +73,7 @@ let
       binariesFile = binariesFile;
       targetsFile = targetsFile;
       coreutils = pkgs.coreutils;
+      findutils = pkgs.findutils;
       jq = pkgs.jq;
       gnutar = pkgs.gnutar;
       gzip = pkgs.gzip;

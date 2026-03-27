@@ -8,6 +8,8 @@ import (
 	"github.com/runecode-systems/runecontext/internal/contracts"
 )
 
+var collectUpgradeAdapterPlansFn = collectUpgradeAdapterPlans
+
 func buildUpgradePlan(project *cliProject, requestedTarget string) (upgradePlan, error) {
 	plan := basePlanFromProject(project, requestedTarget)
 	if done, err := classifyUpgradePlanCommon(&plan, "choose a supported --target-version for this runectx release", "resolve conflicts, then rerun `runectx upgrade`"); done || err != nil {
@@ -20,6 +22,10 @@ func buildUpgradePlan(project *cliProject, requestedTarget string) (upgradePlan,
 func buildUpgradeReadinessFromIndex(absRoot string, index *contracts.ProjectIndex) (upgradePlan, error) {
 	plan := basePlanFromIndex(absRoot, index)
 	if done, err := classifyUpgradePlanCommon(&plan, "choose a supported upgrade path for this runectx release", "resolve managed ownership conflicts and rerun upgrade"); done || err != nil {
+		if err != nil && isOptionalAdapterPackUnavailableError(err) {
+			plan.Warnings = append(plan.Warnings, err.Error())
+			return plan, nil
+		}
 		return plan, err
 	}
 	if plan.TargetVersion == plan.CurrentVersion && hasAdapterMutations(plan.AdapterPlans) {
@@ -74,6 +80,7 @@ func basePlanFromIndex(absRoot string, index *contracts.ProjectIndex) upgradePla
 	}
 	if index != nil && index.Resolution != nil {
 		plan.SourceType = string(index.Resolution.SourceMode)
+		plan.ConfigPath = index.RootConfigPath
 	}
 	return plan
 }
@@ -133,12 +140,17 @@ func classifyMissingUpgradeEdge(plan *upgradePlan, registry upgradePlannerRegist
 }
 
 func classifyAdapterState(plan *upgradePlan, includeCreate bool, nextAction string) error {
-	adapterPlans, conflicts, err := collectUpgradeAdapterPlans(plan.ProjectRoot, includeCreate)
+	adapterPlans, conflicts, warnings, err := collectUpgradeAdapterPlansFn(plan.ProjectRoot, includeCreate)
 	if err != nil {
+		if isOptionalAdapterPackUnavailableError(err) {
+			plan.Warnings = append(plan.Warnings, err.Error())
+			return nil
+		}
 		return err
 	}
 	plan.AdapterPlans = adapterPlans
 	plan.Conflicts = append(plan.Conflicts, conflicts...)
+	plan.Warnings = append(plan.Warnings, warnings...)
 	if len(plan.Conflicts) == 0 {
 		return nil
 	}
@@ -146,6 +158,14 @@ func classifyAdapterState(plan *upgradePlan, includeCreate bool, nextAction stri
 	plan.PlanActions = append(plan.PlanActions, "review and resolve managed artifact ownership conflicts before apply")
 	plan.NextActions = append(plan.NextActions, nextAction)
 	return nil
+}
+
+func isOptionalAdapterPackUnavailableError(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := err.Error()
+	return strings.Contains(message, "could not locate installed adapter packs") || strings.Contains(message, "not found in installed adapter packs")
 }
 
 func finalizeUpgradeVersionState(plan *upgradePlan, staleAction string) {
@@ -169,24 +189,25 @@ func finalizeUpgradeVersionState(plan *upgradePlan, staleAction string) {
 	}
 }
 
-func collectUpgradeAdapterPlans(absRoot string, includeCreate bool) (map[string]adapterSyncState, []string, error) {
+func collectUpgradeAdapterPlans(absRoot string, includeCreate bool) (map[string]adapterSyncState, []string, []string, error) {
 	states := map[string]adapterSyncState{}
 	conflicts := make([]string, 0)
+	warnings := make([]string, 0)
 	for _, tool := range []string{"opencode", "claude-code", "codex"} {
-		state, err := buildAdapterSyncState(adapterRequest{root: absRoot, explicitRoot: true, tool: tool})
+		nextState, nextConflicts, nextWarnings, skip, err := collectSingleUpgradeAdapterPlan(absRoot, tool, includeCreate, conflicts, warnings)
 		if err != nil {
-			if strings.Contains(err.Error(), "host-native artifact conflict") {
-				conflicts = append(conflicts, err.Error())
-				continue
-			}
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
-		state.plan = filterAdapterMutations(state.plan, includeCreate)
-		if len(state.plan) > 0 {
-			states[tool] = state
+		conflicts = nextConflicts
+		warnings = nextWarnings
+		if skip {
+			continue
+		}
+		if len(nextState.plan) > 0 {
+			states[tool] = nextState
 		}
 	}
-	return states, conflicts, nil
+	return states, conflicts, warnings, nil
 }
 
 func filterAdapterMutations(mutations []contracts.FileMutation, includeCreate bool) []contracts.FileMutation {

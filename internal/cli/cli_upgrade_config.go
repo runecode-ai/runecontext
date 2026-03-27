@@ -154,7 +154,7 @@ func validateRunecontextVersionKeyPresent(data []byte) error {
 			return nil
 		}
 	}
-	return nil
+	return fmt.Errorf("runecontext.yaml is missing runecontext_version")
 }
 
 func configFileMode(path string) os.FileMode {

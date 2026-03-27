@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/runecode-systems/runecontext/internal/contracts"
 )
 
 func TestRunUpgradePreviewOnReferenceFixture(t *testing.T) {
@@ -93,6 +95,9 @@ func TestRunUpgradePreviewPathSourceIsExternallyManaged(t *testing.T) {
 	}
 	if !strings.Contains(fields["plan_action_1"], "externally managed") {
 		t.Fatalf("expected externally managed plan action, got %#v", fields)
+	}
+	if !strings.Contains(fields["next_action_1"], "external-runecontext") {
+		t.Fatalf("expected next action to include path source guidance, got %#v", fields)
 	}
 }
 
@@ -452,5 +457,39 @@ func TestRunUpgradeApplyPreservesTrailingLFNewline(t *testing.T) {
 	content := string(updated)
 	if !strings.HasSuffix(content, "\n") {
 		t.Fatalf("expected trailing LF newline to remain, got %q", content)
+	}
+}
+
+func TestValidateRunecontextVersionKeyPresentReturnsMissingKeyError(t *testing.T) {
+	err := validateRunecontextVersionKeyPresent([]byte("schema_version: 1\nassurance_tier: plain\nsource:\n  type: embedded\n  path: runecontext\n"))
+	if err == nil {
+		t.Fatalf("expected missing runecontext_version error")
+	}
+	if !strings.Contains(err.Error(), "runecontext.yaml is missing runecontext_version") {
+		t.Fatalf("expected missing runecontext_version error, got %v", err)
+	}
+}
+
+func TestBuildUpgradeReadinessFromIndexIgnoresMissingOptionalAdapterPacks(t *testing.T) {
+	root := repoFixtureRoot(t, "bundle-resolution", "valid-project")
+	v := contracts.NewValidator(schemaRoot(t))
+	index, err := v.ValidateProject(root)
+	if err != nil {
+		t.Fatalf("validate project: %v", err)
+	}
+	defer index.Close()
+
+	original := collectUpgradeAdapterPlansFn
+	t.Cleanup(func() { collectUpgradeAdapterPlansFn = original })
+	collectUpgradeAdapterPlansFn = func(absRoot string, includeCreate bool) (map[string]adapterSyncState, []string, []string, error) {
+		return nil, nil, nil, fmt.Errorf("could not locate installed adapter packs")
+	}
+
+	plan, err := buildUpgradeReadinessFromIndex(root, index)
+	if err != nil {
+		t.Fatalf("expected optional adapter pack errors to be non-fatal, got %v", err)
+	}
+	if len(plan.Warnings) == 0 {
+		t.Fatalf("expected warning for missing optional adapter pack")
 	}
 }

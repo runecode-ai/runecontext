@@ -25,6 +25,7 @@ type upgradePlan struct {
 	PlanActions    []string
 	NextActions    []string
 	Conflicts      []string
+	Warnings       []string
 	ApplyMutations []string
 
 	ConfigPath   string
@@ -132,6 +133,14 @@ func upgradePlanDiagnostics(plan upgradePlan) []emittedDiagnostic {
 			Message:  "managed artifact conflicts detected; resolve ownership conflicts before upgrade apply",
 		}}
 	default:
-		return nil
+		diagnostics := make([]emittedDiagnostic, 0, len(plan.Warnings))
+		for _, warning := range plan.Warnings {
+			diagnostics = append(diagnostics, emittedDiagnostic{
+				Severity: contracts.DiagnosticSeverityWarning,
+				Code:     "optional_adapter_pack_unavailable",
+				Message:  warning,
+			})
+		}
+		return diagnostics
 	}
 }

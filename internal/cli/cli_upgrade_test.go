@@ -470,6 +470,15 @@ func TestValidateRunecontextVersionKeyPresentReturnsMissingKeyError(t *testing.T
 	}
 }
 
+func TestRewriteRunecontextVersionReportsUnrewriteableScalar(t *testing.T) {
+	config := "schema_version: 1\nrunecontext_version:\n  major: 1\n"
+	if _, err := rewriteRunecontextVersion([]byte(config), "0.1.0-alpha.9"); err == nil {
+		t.Fatalf("expected rewrite error for non-scalar runecontext_version")
+	} else if !strings.Contains(err.Error(), "not a rewriteable scalar") {
+		t.Fatalf("expected scalar warning, got %v", err)
+	}
+}
+
 func TestBuildUpgradeReadinessFromIndexIgnoresMissingOptionalAdapterPacks(t *testing.T) {
 	root := repoFixtureRoot(t, "bundle-resolution", "valid-project")
 	v := contracts.NewValidator(schemaRoot(t))

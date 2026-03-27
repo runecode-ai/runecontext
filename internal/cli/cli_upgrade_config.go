@@ -31,7 +31,7 @@ func rewriteRunecontextVersion(data []byte, target string) ([]byte, error) {
 	if err := validateRunecontextVersionKeyPresent(data); err != nil {
 		return nil, err
 	}
-	return nil, fmt.Errorf("runecontext.yaml is missing runecontext_version")
+	return nil, fmt.Errorf("runecontext.yaml contains runecontext_version but it is not a rewriteable scalar value")
 }
 
 func splitLinesPreserveStyle(raw, newLine string) []string {

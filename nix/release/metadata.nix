@@ -1,7 +1,7 @@
 let
   base = rec {
     packageName = "runecontext";
-    version = "0.1.0-alpha.8";
+    version = "0.1.0-alpha.9";
 
     topLevelFiles = [
       "README.md"

@@ -29,7 +29,7 @@ Environment:
 }
 
 function Resolve-LatestTag {
-  $response = Invoke-WebRequest -Uri "https://github.com/runecode-systems/runecontext/releases/latest"
+  $response = Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/runecode-systems/runecontext/releases/latest"
   $segments = $response.BaseResponse.ResponseUri.AbsolutePath.Split('/', [System.StringSplitOptions]::RemoveEmptyEntries)
   if ($segments.Length -lt 1) {
     throw "failed to resolve latest release tag"

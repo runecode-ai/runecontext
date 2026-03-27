@@ -22,13 +22,8 @@ func runValidate(args []string, stdout, stderr io.Writer) int {
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandUsageErrorLines("validate", validateUsage, err), machine), exitUsage, failureClassUsage)
 		return exitUsage
 	}
-	if len(remaining) > 0 && isHelpToken(remaining[0]) {
-		if len(remaining) != 1 {
-			emitOutput(stderr, machine, appendMachineOptionLines(buildCommandUsageErrorLines("validate", validateUsage, fmt.Errorf("help does not accept additional arguments")), machine), exitUsage, failureClassUsage)
-			return exitUsage
-		}
-		emitOutput(stdout, machine, appendMachineOptionLines([]line{{"result", "ok"}, {"command", "validate"}, {"usage", validateUsage}}, machine), exitOK, failureClassNone)
-		return exitOK
+	if handled, code := runValidateHelpIfRequested(remaining, machine, stdout, stderr); handled {
+		return code
 	}
 	request, err := parseValidateArgs(remaining)
 	if err != nil {
@@ -57,6 +52,18 @@ func runValidate(args []string, stdout, stderr io.Writer) int {
 	}
 	emitOutput(stdout, machine, appendMachineOptionLines(output, machine), exitOK, failureClassNone)
 	return exitOK
+}
+
+func runValidateHelpIfRequested(args []string, machine machineOptions, stdout, stderr io.Writer) (bool, int) {
+	if len(args) == 0 || !isHelpToken(args[0]) {
+		return false, exitOK
+	}
+	if len(args) != 1 {
+		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandUsageErrorLines("validate", validateUsage, fmt.Errorf("help does not accept additional arguments")), machine), exitUsage, failureClassUsage)
+		return true, exitUsage
+	}
+	emitOutput(stdout, machine, appendMachineOptionLines([]line{{"result", "ok"}, {"command", "validate"}, {"usage", validateUsage}}, machine), exitOK, failureClassNone)
+	return true, exitOK
 }
 
 func parseValidateArgs(args []string) (validateRequest, error) {

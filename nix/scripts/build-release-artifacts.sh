@@ -86,6 +86,59 @@ for archive_ext in "${bundle_formats[@]}"; do
   record_archive "repo_bundle" "${archive_ext}" "${archive_file}" "${archive_sha}"
 done
 
+process_pack_archives() {
+  local kind="$1"
+  local entries_json="$2"
+
+  if [ ! -s "${entries_json}" ]; then
+    return
+  fi
+
+  local -a packs
+  if ! mapfile -t packs < <(@jq@/bin/jq -ce '.[]' "${entries_json}"); then
+    printf 'failed to parse pack metadata: %s\n' "${entries_json}" >&2
+    exit 1
+  fi
+
+  for pack in "${packs[@]}"; do
+    [ -n "${pack}" ] || continue
+    local name
+    name="$(@jq@/bin/jq -r '.name' <<<"${pack}")"
+    if [[ ! "${name}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+      printf 'invalid pack name: %s\n' "${name}" >&2
+      exit 1
+    fi
+    local -a entries
+    mapfile -t entries < <(@jq@/bin/jq -r '.entries[]' <<<"${pack}")
+
+    local pack_root
+    pack_root="release/payload/${name}"
+    rm -rf "${pack_root}"
+    mkdir -p "${pack_root}"
+
+    for entry in "${entries[@]}"; do
+      [ -n "${entry}" ] || continue
+      if [ ! -e "${entry}" ]; then
+        printf 'missing required release entry: %s\n' "${entry}" >&2
+        exit 1
+      fi
+      cp -R --parents "${entry}" "${pack_root}"
+    done
+
+    chmod -R u=rwX,go=rX "${pack_root}"
+    find "${pack_root}" -exec touch -h -d '1980-01-01T00:00:00Z' {} +
+
+    (cd release/payload && @gnutar@/bin/tar --format=gnu --sort=name --mtime='UTC 1980-01-01' --owner=0 --group=0 --numeric-owner -cf - "${name}" | @gzip@/bin/gzip -n > "../dist/${name}.tar.gz")
+
+    local pack_sha
+    pack_sha="$(@coreutils@/bin/sha256sum "release/dist/${name}.tar.gz" | cut -d ' ' -f 1)"
+    record_archive "${kind}" "tar.gz" "${name}.tar.gz" "${pack_sha}"
+  done
+}
+
+process_pack_archives "schema_bundle" "@schemaBundlesFile@"
+process_pack_archives "adapter_pack" "@adapterPacksFile@"
+
 mapfile -t binaries < "@binariesFile@"
 mapfile -t targets < "@targetsFile@"
 

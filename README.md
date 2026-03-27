@@ -1,6 +1,6 @@
 # RuneContext - Portable, markdown-first project knowledge, standards, and context bundles
 
-[![CI](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml/badge.svg)](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml) [![Status: alpha.8](https://img.shields.io/badge/status-alpha.8-orange)](docs/implementation-plan/README.md) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![CI](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml/badge.svg)](https://github.com/runecode-systems/runecontext/actions/workflows/ci.yml) [![Status: alpha.9](https://img.shields.io/badge/status-alpha.9-orange)](docs/implementation-plan/README.md) [![License: Apache-2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 RuneContext is a portable, markdown-first, git-native system for project knowledge, standards, changes, and reusable context bundles. It is AI-tooling-agnostic by design, so teams can use the same source artifacts with different tools or manual workflows without turning the format into a product-specific silo.
 
@@ -89,7 +89,7 @@ Still incremental / not implemented end-to-end yet:
 
 ## Install / Try The CLI
 
-The recommended way to use RuneContext is through the `runectx` CLI. With alpha.8 release/install/upgrade hardening now implemented, `runectx` is the primary supported interface for installing, initializing, validating, diagnosing, upgrading, and syncing RuneContext-managed project assets.
+The recommended way to use RuneContext is through the `runectx` CLI. With alpha.9 release/install/upgrade hardening now implemented, `runectx` is the primary supported interface for installing, initializing, validating, diagnosing, upgrading, and syncing RuneContext-managed project assets.
 
 RuneContext is distributed as reviewable repo bundles from GitHub Releases, and those bundles remain the canonical release contents. The standalone `runectx` binary archive is only an optional delivery format; once RuneContext is installed or vendored, the CLI is the normal way to manage it inside projects. In day-to-day use, project setup and maintenance are centered on `runectx init`, `runectx validate`, `runectx doctor`, `runectx adapter sync`, and `runectx upgrade` / `runectx upgrade apply`. Today, the simplest way to dogfood the current checkout is `just build`, which assembles a repo-local package with the built CLI plus the RuneContext files it needs for full local operation.
 
@@ -112,7 +112,7 @@ bash install-runectx.sh
 Pinned version example:
 
 ```sh
-TAG="v0.1.0-alpha.8"
+TAG="v0.1.0-alpha.9"
 curl -fsSLO "https://github.com/runecode-systems/runecontext/releases/download/${TAG}/install-runectx.sh"
 bash install-runectx.sh --version "$TAG"
 ```
@@ -129,7 +129,7 @@ powershell -ExecutionPolicy Bypass -File .\install-runectx.ps1
 Pinned version example:
 
 ```powershell
-$Tag = "v0.1.0-alpha.8"
+$Tag = "v0.1.0-alpha.9"
 Invoke-WebRequest -Uri "https://github.com/runecode-systems/runecontext/releases/download/$Tag/install-runectx.ps1" -OutFile install-runectx.ps1
 powershell -ExecutionPolicy Bypass -File .\install-runectx.ps1 -Version $Tag
 ```

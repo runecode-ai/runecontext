@@ -94,7 +94,13 @@ process_pack_archives() {
     return
   fi
 
-  while IFS= read -r pack; do
+  local -a packs
+  if ! mapfile -t packs < <(@jq@/bin/jq -ce '.[]' "${entries_json}"); then
+    printf 'failed to parse pack metadata: %s\n' "${entries_json}" >&2
+    exit 1
+  fi
+
+  for pack in "${packs[@]}"; do
     [ -n "${pack}" ] || continue
     local name
     name="$(@jq@/bin/jq -r '.name' <<<"${pack}")"
@@ -127,7 +133,7 @@ process_pack_archives() {
     local pack_sha
     pack_sha="$(@coreutils@/bin/sha256sum "release/dist/${name}.tar.gz" | cut -d ' ' -f 1)"
     record_archive "${kind}" "tar.gz" "${name}.tar.gz" "${pack_sha}"
-  done < <(@jq@/bin/jq -c '.[]' "${entries_json}")
+  done
 }
 
 process_pack_archives "schema_bundle" "@schemaBundlesFile@"

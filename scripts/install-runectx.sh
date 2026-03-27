@@ -42,6 +42,15 @@ resolve_latest_tag() {
   printf '%s\n' "${latest_url##*/}"
 }
 
+validate_version_tag() {
+  local tag="$1"
+  if [[ "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
+    return
+  fi
+  printf 'invalid release tag %q (expected format like v0.1.0-alpha.8)\n' "${tag}" >&2
+  exit 1
+}
+
 map_os() {
   local uname_s
   uname_s="$(uname -s | tr '[:upper:]' '[:lower:]')"
@@ -136,6 +145,7 @@ require_cmd grep
 if [ -z "${version}" ]; then
   version="$(resolve_latest_tag)"
 fi
+validate_version_tag "${version}"
 
 os="$(map_os)"
 arch="$(map_arch)"

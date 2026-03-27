@@ -51,6 +51,18 @@ function Resolve-Arch {
   }
 }
 
+function Test-VersionTag {
+  param(
+    [string]$Tag
+  )
+
+  if ($Tag -match '^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$') {
+    return $true
+  }
+
+  return $false
+}
+
 function Parse-Sha256Entry {
   param(
     [string]$ChecksumsPath,
@@ -82,6 +94,10 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
   $Version = Resolve-LatestTag
 }
 
+if (-not (Test-VersionTag -Tag $Version)) {
+  throw "invalid release tag '$Version' (expected format like v0.1.0-alpha.8)"
+}
+
 $arch = Resolve-Arch
 $checksums = "SHA256SUMS"
 $baseUrl = "https://github.com/$repo/releases/download/$Version"
@@ -100,7 +116,7 @@ try {
   Write-Host "Install destination: $(Join-Path $InstallDir 'runectx.exe')"
 
   $checksumsPath = Join-Path $workDir $checksums
-  Invoke-WebRequest -Uri "$baseUrl/$checksums" -OutFile $checksumsPath
+  Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/$checksums" -OutFile $checksumsPath
 
   $shaEntry = Parse-Sha256Entry -ChecksumsPath $checksumsPath -CandidateArchives $candidateArchives
   if (-not $shaEntry) {
@@ -109,7 +125,7 @@ try {
 
   $archive = $shaEntry.Archive
   $archivePath = Join-Path $workDir $archive
-  Invoke-WebRequest -Uri "$baseUrl/$archive" -OutFile $archivePath
+  Invoke-WebRequest -UseBasicParsing -Uri "$baseUrl/$archive" -OutFile $archivePath
 
   $actualHash = (Get-FileHash -Path $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
 

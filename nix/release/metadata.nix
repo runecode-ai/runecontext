@@ -24,6 +24,7 @@ let
       "adapters"
       "schemas"
       "fixtures"
+      "scripts"
       "cmd"
       "internal"
       "tools"
@@ -79,6 +80,11 @@ let
 
     binaries = [
       "runectx"
+    ];
+
+    installerScripts = [
+      "scripts/install-runectx.sh"
+      "scripts/install-runectx.ps1"
     ];
 
     targets = [

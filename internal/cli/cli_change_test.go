@@ -403,10 +403,10 @@ func runCLIStatus(t *testing.T, projectRoot string) map[string]string {
 	t.Helper()
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	if code := Run([]string{"status", projectRoot}, &stdout, &stderr); code != 0 {
+	if code := Run([]string{"status", "--json", projectRoot}, &stdout, &stderr); code != 0 {
 		t.Fatalf("status command failed: %d (%s)", code, stderr.String())
 	}
-	return parseCLIKeyValueOutput(t, stdout.String())
+	return parseCLIJSONEnvelopeData(t, stdout.Bytes())
 }
 
 func TestRunStatusRejectsUnknownFlag(t *testing.T) {
@@ -425,11 +425,11 @@ func TestRunStatusAcceptsPathFlag(t *testing.T) {
 	projectRoot := prepareCLIWorkflowProject(t)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
-	code := Run([]string{"status", "--path", projectRoot}, &stdout, &stderr)
+	code := Run([]string{"status", "--json", "--path", projectRoot}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("expected success exit code, got %d (%s)", code, stderr.String())
 	}
-	fields := parseCLIKeyValueOutput(t, stdout.String())
+	fields := parseCLIJSONEnvelopeData(t, stdout.Bytes())
 	if got, want := fields["command"], "status"; got != want {
 		t.Fatalf("expected command %q, got %q", want, got)
 	}

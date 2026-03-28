@@ -32,6 +32,10 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines("status", project.absRoot, err), machine), exitInvalid, failureClassInvalid)
 		return exitInvalid
 	}
+	if !machine.jsonOutput {
+		_, _ = io.WriteString(stdout, renderHumanStatus(project.absRoot, project.loaded, summary, statusRenderOptions{color: shouldUseStatusColor(stdout), explain: machine.explain}))
+		return exitOK
+	}
 	output := buildStatusOutput(project.absRoot, summary)
 	if machine.explain {
 		output = appendStatusExplainLines(output, project.loaded, summary)

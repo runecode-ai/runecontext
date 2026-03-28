@@ -32,8 +32,22 @@ func runStatus(args []string, stdout, stderr io.Writer) int {
 		emitOutput(stderr, machine, appendMachineOptionLines(buildCommandInvalidLines("status", project.absRoot, err), machine), exitInvalid, failureClassInvalid)
 		return exitInvalid
 	}
+	if machine.jsonOutput {
+		if request.historyModeSet || request.historyLimitSet || request.verbose {
+			err := fmt.Errorf("--history, --history-limit, and --verbose are only supported for human status output")
+			emitOutput(stderr, machine, appendMachineOptionLines(buildCommandUsageErrorLines("status", statusUsage, err), machine), exitUsage, failureClassUsage)
+			return exitUsage
+		}
+	}
 	if !machine.jsonOutput {
-		_, _ = io.WriteString(stdout, renderHumanStatus(project.absRoot, project.loaded, summary, statusRenderOptions{color: shouldUseStatusColor(stdout), explain: machine.explain}))
+		rendered := renderHumanStatus(project.absRoot, project.loaded, summary, statusRenderOptions{
+			color:        shouldUseStatusColor(stdout),
+			explain:      machine.explain,
+			historyMode:  request.historyMode,
+			historyLimit: request.historyLimit,
+			verbose:      request.verbose,
+		})
+		_, _ = io.WriteString(stdout, rendered)
 		return exitOK
 	}
 	output := buildStatusOutput(project.absRoot, summary)

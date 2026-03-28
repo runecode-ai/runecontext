@@ -6,11 +6,17 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/runecode-systems/runecontext/internal/contracts"
 )
 
 const (
+	defaultStatusHistoryLimit = 5
+	statusHistoryModeRecent   = "recent"
+	statusHistoryModeAll      = "all"
+	statusHistoryModeNone     = "none"
+
 	ansiReset  = "\x1b[0m"
 	ansiBold   = "\x1b[1m"
 	ansiDim    = "\x1b[2m"
@@ -22,8 +28,11 @@ const (
 )
 
 type statusRenderOptions struct {
-	color   bool
-	explain bool
+	color        bool
+	explain      bool
+	historyMode  string
+	historyLimit int
+	verbose      bool
 }
 
 func renderHumanStatus(absRoot string, loaded *contracts.LoadedProject, summary *contracts.ProjectStatusSummary, options statusRenderOptions) string {
@@ -31,10 +40,16 @@ func renderHumanStatus(absRoot string, loaded *contracts.LoadedProject, summary 
 		return ""
 	}
 	var builder strings.Builder
+	options = normalizeStatusRenderOptions(options)
+	closedEntries, closedHidden := selectHistoryEntries(summary.Closed, options)
+	supersededEntries, supersededHidden := selectHistoryEntries(summary.Superseded, options)
 	appendStatusHeader(&builder, absRoot, summary, options)
 	appendStatusSection(&builder, "In Flight", summary.Active, options)
-	appendStatusSection(&builder, "Recently Completed", summary.Closed, options)
-	appendStatusSection(&builder, "Replaced", summary.Superseded, options)
+	builder.WriteString("\n")
+	appendStatusSection(&builder, "Recently Completed", closedEntries, options)
+	appendStatusHistoryHint(&builder, "closed", len(summary.Closed), len(closedEntries), closedHidden, options)
+	appendStatusSection(&builder, "Replaced", supersededEntries, options)
+	appendStatusHistoryHint(&builder, "superseded", len(summary.Superseded), len(supersededEntries), supersededHidden, options)
 	if options.explain {
 		appendStatusExplainHuman(&builder, loaded, summary, options)
 	}
@@ -71,8 +86,18 @@ func appendStatusSection(builder *strings.Builder, title string, entries []contr
 	builder.WriteString("\n")
 }
 
+func appendStatusHistoryHint(builder *strings.Builder, label string, total, shown int, hidden bool, options statusRenderOptions) {
+	if !hidden {
+		return
+	}
+	builder.WriteString(fmt.Sprintf("  showing %d of %d %s changes; use --history all to show more\n\n", shown, total, label))
+}
+
 func appendStatusEntry(builder *strings.Builder, entry contracts.ChangeStatusEntry, options statusRenderOptions) {
 	builder.WriteString(fmt.Sprintf("- %s [%s %s] %s  %s\n", entry.ID, emptyAsDash(entry.Type), emptyAsDash(entry.Size), entry.Title, renderVerificationBadge(entry.VerificationStatus, options.color)))
+	if !options.verbose {
+		return
+	}
 	relationshipLines := statusRelationshipLines(entry)
 	for i, item := range relationshipLines {
 		prefix := "  |-- "
@@ -81,6 +106,68 @@ func appendStatusEntry(builder *strings.Builder, entry contracts.ChangeStatusEnt
 		}
 		builder.WriteString(prefix + item + "\n")
 	}
+}
+
+func normalizeStatusRenderOptions(options statusRenderOptions) statusRenderOptions {
+	if strings.TrimSpace(options.historyMode) == "" {
+		options.historyMode = statusHistoryModeRecent
+	}
+	if options.historyLimit < 1 {
+		options.historyLimit = defaultStatusHistoryLimit
+	}
+	return options
+}
+
+func selectHistoryEntries(entries []contracts.ChangeStatusEntry, options statusRenderOptions) ([]contracts.ChangeStatusEntry, bool) {
+	if len(entries) == 0 {
+		return entries, false
+	}
+	ordered := sortedStatusEntriesByRecency(entries)
+	switch options.historyMode {
+	case statusHistoryModeAll:
+		return ordered, false
+	case statusHistoryModeNone:
+		return nil, len(ordered) > 0
+	default:
+		if len(ordered) <= options.historyLimit {
+			return ordered, false
+		}
+		return ordered[:options.historyLimit], true
+	}
+}
+
+func sortedStatusEntriesByRecency(entries []contracts.ChangeStatusEntry) []contracts.ChangeStatusEntry {
+	ordered := append([]contracts.ChangeStatusEntry(nil), entries...)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		left := statusEntryRecencyKey(ordered[i])
+		right := statusEntryRecencyKey(ordered[j])
+		if left != right {
+			return left > right
+		}
+		return ordered[i].ID < ordered[j].ID
+	})
+	return ordered
+}
+
+func statusEntryRecencyKey(entry contracts.ChangeStatusEntry) string {
+	for _, candidate := range []string{entry.ClosedAt, entry.CreatedAt} {
+		if parsed, ok := parseStatusDate(candidate); ok {
+			return parsed.Format("2006-01-02")
+		}
+	}
+	return ""
+}
+
+func parseStatusDate(raw string) (time.Time, bool) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return time.Time{}, false
+	}
+	parsed, err := time.Parse("2006-01-02", trimmed)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return parsed, true
 }
 
 func statusRelationshipLines(entry contracts.ChangeStatusEntry) []string {

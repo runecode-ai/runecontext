@@ -460,6 +460,46 @@ func TestRunStatusRejectsDryRunFlag(t *testing.T) {
 	}
 }
 
+func TestRunStatusRejectsInvalidHistoryValue(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"status", "--history", "later"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code for invalid history mode, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "--history must be one of recent, all, or none") {
+		t.Fatalf("expected invalid history mode output, got %q", stderr.String())
+	}
+}
+
+func TestRunStatusRejectsInvalidHistoryLimit(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"status", "--history-limit", "0"}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code for invalid history limit, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "--history-limit must be a positive integer") {
+		t.Fatalf("expected invalid history-limit output, got %q", stderr.String())
+	}
+}
+
+func TestRunStatusRejectsHumanOnlyFlagsWithJSON(t *testing.T) {
+	projectRoot := prepareCLIWorkflowProject(t)
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := Run([]string{"status", "--json", "--history", "all", projectRoot}, &stdout, &stderr)
+	if code != 2 {
+		t.Fatalf("expected usage exit code for human-only flags with json, got %d", code)
+	}
+	if !strings.Contains(stderr.String(), "--history, --history-limit, and --verbose are only supported for human status output") {
+		t.Fatalf("expected human-only flag rejection output, got %q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "\"schema_version\"") {
+		t.Fatalf("expected --json envelope on parse/use rejection, got %q", stderr.String())
+	}
+}
+
 func TestRunStatusJSONOutputEnvelope(t *testing.T) {
 	projectRoot := prepareCLIWorkflowProject(t)
 	var stdout bytes.Buffer

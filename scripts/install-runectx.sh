@@ -32,6 +32,20 @@ require_cmd() {
   fi
 }
 
+install_prefix_for_dir() {
+  local dir="$1"
+  local clean
+  clean="${dir%/}"
+  case "${clean}" in
+    */bin)
+      printf '%s\n' "${clean%/bin}"
+      ;;
+    *)
+      printf '%s\n' "${clean}"
+      ;;
+  esac
+}
+
 resolve_latest_tag() {
   local latest_url
   latest_url="$(curl -fsSL -o /dev/null -w '%{url_effective}' "https://github.com/${repo}/releases/latest")"
@@ -203,16 +217,31 @@ tar -xzf "${workdir}/${archive}" -C "${workdir}/unpack"
 
 package_dir="${workdir}/unpack/runecontext_${version}_${os}_${arch}"
 binary_path="${package_dir}/bin/runectx"
+runtime_source="${package_dir}/share/runecontext"
 
 if [ ! -f "${binary_path}" ]; then
   printf 'expected binary not found: %s\n' "${binary_path}" >&2
   exit 1
 fi
+if [ ! -d "${runtime_source}/schemas" ]; then
+  printf 'expected runtime schemas not found: %s\n' "${runtime_source}/schemas" >&2
+  exit 1
+fi
+if [ ! -d "${runtime_source}/adapters" ]; then
+  printf 'expected runtime adapters not found: %s\n' "${runtime_source}/adapters" >&2
+  exit 1
+fi
 
 mkdir -p "${install_dir}"
 install -m 0755 "${binary_path}" "${install_dir}/runectx"
+install_prefix="$(install_prefix_for_dir "${install_dir}")"
+runtime_target="${install_prefix}/share/runecontext"
+mkdir -p "$(dirname "${runtime_target}")"
+rm -rf "${runtime_target}"
+cp -R "${runtime_source}" "${runtime_target}"
 
 printf '\nInstalled runectx to %s/runectx\n' "${install_dir}"
+printf 'Installed runtime assets to %s\n' "${runtime_target}"
 "${install_dir}/runectx" version
 
 cat <<'EOF'

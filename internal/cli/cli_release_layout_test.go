@@ -54,6 +54,41 @@ func TestLocateAdaptersRootFromReleaseStyleLayout(t *testing.T) {
 	}
 }
 
+func TestLocateSchemaRootFromInstalledShareLayout(t *testing.T) {
+	installRoot := t.TempDir()
+	schemaDir := filepath.Join(installRoot, "share", "runecontext", "schemas")
+	adaptersDir := filepath.Join(installRoot, "share", "runecontext", "adapters")
+	seedReleaseStyleLayout(t, schemaDir, adaptersDir)
+
+	outsideRoot := t.TempDir()
+	originalGetwd := schemaRootGetwdFn
+	originalExecutable := schemaRootExecutableFn
+	t.Cleanup(func() {
+		schemaRootGetwdFn = originalGetwd
+		schemaRootExecutableFn = originalExecutable
+	})
+	schemaRootGetwdFn = func() (string, error) { return outsideRoot, nil }
+	schemaRootExecutableFn = func() (string, error) {
+		return filepath.Join(installRoot, "bin", "runectx"), nil
+	}
+
+	got, err := locateSchemaRoot()
+	if err != nil {
+		t.Fatalf("locate schema root: %v", err)
+	}
+	gotCanonical, err := filepath.EvalSymlinks(got)
+	if err != nil {
+		t.Fatalf("resolve located schema root symlinks: %v", err)
+	}
+	expectedCanonical, err := filepath.EvalSymlinks(schemaDir)
+	if err != nil {
+		t.Fatalf("resolve expected schema root symlinks: %v", err)
+	}
+	if gotCanonical != expectedCanonical {
+		t.Fatalf("expected schema root %q, got %q", expectedCanonical, gotCanonical)
+	}
+}
+
 func seedReleaseStyleLayout(t *testing.T, schemaDir, adaptersDir string) {
 	t.Helper()
 	if err := os.MkdirAll(schemaDir, 0o755); err != nil {

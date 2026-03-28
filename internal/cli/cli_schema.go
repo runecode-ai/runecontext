@@ -6,13 +6,18 @@ import (
 	"path/filepath"
 )
 
+var schemaRootGetwdFn = os.Getwd
+var schemaRootExecutableFn = os.Executable
+
 func locateSchemaRoot() (string, error) {
-	starts := make([]string, 0, 2)
-	if wd, err := os.Getwd(); err == nil {
+	starts := make([]string, 0, 4)
+	if wd, err := schemaRootGetwdFn(); err == nil {
 		starts = append(starts, wd)
 	}
-	if exe, err := os.Executable(); err == nil {
-		starts = append(starts, filepath.Dir(exe))
+	if exe, err := schemaRootExecutableFn(); err == nil {
+		exeDir := filepath.Dir(exe)
+		starts = append(starts, exeDir)
+		starts = append(starts, filepath.Join(exeDir, "..", "share", "runecontext"))
 	}
 
 	seen := map[string]struct{}{}

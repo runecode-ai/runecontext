@@ -84,6 +84,18 @@ function Parse-Sha256Entry {
   return $null
 }
 
+function Resolve-InstallPrefix {
+  param(
+    [string]$Directory
+  )
+
+  $clean = $Directory.TrimEnd('/','\\')
+  if ($clean -match '[/\\]bin$') {
+    return [System.IO.Path]::GetDirectoryName($clean)
+  }
+  return $clean
+}
+
 if ($Help) {
   Show-Usage
   exit 0
@@ -163,6 +175,7 @@ try {
 
   $packageDir = Join-Path $extractDir ("runecontext_${Version}_windows_${arch}")
   $binDir = Join-Path $packageDir "bin"
+  $runtimeSource = Join-Path $packageDir "share/runecontext"
 
   $candidateBinaries = @(
     Join-Path $binDir "runectx.exe",
@@ -173,13 +186,27 @@ try {
   if (-not $binaryPath) {
     throw "expected runectx binary not found under $binDir"
   }
+  if (-not (Test-Path (Join-Path $runtimeSource "schemas"))) {
+    throw "expected runtime schemas not found under $runtimeSource"
+  }
+  if (-not (Test-Path (Join-Path $runtimeSource "adapters"))) {
+    throw "expected runtime adapters not found under $runtimeSource"
+  }
 
   $null = New-Item -ItemType Directory -Force -Path $InstallDir
   $installTarget = Join-Path $InstallDir "runectx.exe"
   Copy-Item -Path $binaryPath -Destination $installTarget -Force
+  $installPrefix = Resolve-InstallPrefix -Directory $InstallDir
+  $runtimeTarget = Join-Path $installPrefix "share/runecontext"
+  $null = New-Item -ItemType Directory -Force -Path (Split-Path -Parent $runtimeTarget)
+  if (Test-Path $runtimeTarget) {
+    Remove-Item -Recurse -Force $runtimeTarget
+  }
+  Copy-Item -Path $runtimeSource -Destination $runtimeTarget -Recurse -Force
 
   Write-Host ""
   Write-Host "Installed runectx to $installTarget"
+  Write-Host "Installed runtime assets to $runtimeTarget"
   & $installTarget version
 
   Write-Host ""

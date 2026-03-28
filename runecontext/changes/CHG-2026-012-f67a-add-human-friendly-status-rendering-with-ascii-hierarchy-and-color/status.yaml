@@ -1,7 +1,7 @@
 schema_version: 1
 id: CHG-2026-012-f67a-add-human-friendly-status-rendering-with-ascii-hierarchy-and-color
 title: Add human-friendly status rendering with ASCII hierarchy and color
-status: proposed
+status: implemented
 type: feature
 size: medium
 verification_status: pending
